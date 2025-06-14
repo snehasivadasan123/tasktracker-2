@@ -29,7 +29,7 @@ export default function WorkspaceCard({
           <Pencil className="w-4 h-4" />
         </button>
         <button onClick={onDelete}>
-          <Trash2 className="w-4 h-4 text-yellow-500" />
+          <Trash2 className="w-4 h-4 text-green-500" />
         </button>
         <button onClick={onDownload}>
           <Download className="w-4 h-4" />
