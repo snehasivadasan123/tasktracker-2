@@ -13,9 +13,10 @@ import { ArrowRight, Download, Pencil, Plus, Trash2 } from "lucide-react";
 import React from "react";
 interface Props {
   workspaceDatas: Iworkspace[];
+  onAddWorkspace?: () => void;
 }
 
-const WorkspaceOverview = ({ workspaceDatas }: Props) => {
+const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace }: Props) => {
   console.log("the datas are", workspaceDatas);
 
   return (
@@ -47,24 +48,24 @@ const WorkspaceOverview = ({ workspaceDatas }: Props) => {
           </div>
         </Card>
       ))}
-<Card className="flex flex-col justify-center items-center bg-gray-100 hover:bg-white transition-colors border border-gray-200 rounded-none w-[340px] h-[200px] p-0 cursor-pointer">
+      <Card 
+        onClick={onAddWorkspace}
+        className="flex flex-col justify-center items-center bg-gray-100 hover:bg-white transition-colors border border-gray-200 rounded-none w-[340px] h-[200px] p-0 cursor-pointer"
+      >
         <CardContent className="flex flex-col items-center justify-center flex-1 p-6">
           <Button
             variant="ghost"
             size="icon"
-            className="bg-gray-200 rounded-none mb-2 p-2">
+            className="bg-gray-200 rounded-none mb-2 p-2"
+            onClick={onAddWorkspace}
+          >
             <Plus className="w-5 h-5 text-gray-700" />
           </Button>
-          <a
-            href="#"
-            className="text-base underline text-gray-800"
-          
-          >
+          <span className="text-base underline text-gray-800">
             Add workspace
-          </a>
+          </span>
         </CardContent>
       </Card>
-      
     </div>
   );
 };
