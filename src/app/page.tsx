@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import WorkspaceOverview from '@/components/WorkspaceOverview'
 import { Iworkspace } from "@/types"
 import WorkspaceDialog from '@/components/WorkspaceDialog'
@@ -11,11 +11,16 @@ const page = () => {
     { id: 1, title: "Project management", date: "Mon May 02 2022" },
     { id: 2, title: "Digital marketing course timeline", date: "Mon May 02 2022" },
     { id: 3, title: "Business planning", date: "Mon May 02 2022" },
-  ]);
+  ])
+  const [editDialogOpen,setEditDialogOpen]=useState(false)
+  const [workspaceToEdit,setWorkspaceToEdit]=useState<Iworkspace|null>(null)
 
   const handleAddWorkspace = () => {
     setOpen(true);
-  };
+  }
+  const handleEditWorkspace=()=>{
+    
+  }
 
   return (
     <main className='p-8'>
@@ -23,6 +28,7 @@ const page = () => {
       <WorkspaceOverview 
         workspaceDatas={workspaces} 
         onAddWorkspace={handleAddWorkspace}
+        onEditWorkspace={handleEditWorkspace}
       />
       <WorkspaceDialog
         open={open}

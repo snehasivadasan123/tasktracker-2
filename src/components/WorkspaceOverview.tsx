@@ -10,14 +10,19 @@ import {
 } from "./ui/card";
 import { Button } from "./ui/button";
 import { ArrowRight, Download, Pencil, Plus, Trash2 } from "lucide-react";
-import React from "react";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 interface Props {
   workspaceDatas: Iworkspace[];
-  onAddWorkspace?: () => void;
+  onAddWorkspace?: () => void
 }
 
 const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace }: Props) => {
-  console.log("the datas are", workspaceDatas);
+  console.log("the datas are", workspaceDatas)
+  const router = useRouter()
+  const [editDialogOpen,setEditDialogOpen]=useState(false)
+  const [workspaceToEdit,setWorkspaceToEdit]=useState<Iworkspace|null>(null)
+
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-8 ">
@@ -29,7 +34,9 @@ const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace }: Props) => {
           <CardContent className="flex-1 flex flex-col justify-between p-6 pb-0">
             <div className="text-lg font-semibold mb-8">{ws.title}</div>
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2">
+              <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2"
+              onClick={()=>onEditWorkspace?.(ws)}
+              >
                 <Pencil className="w-5 h-5 " />
               </Button>
               <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2">
@@ -38,7 +45,7 @@ const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace }: Props) => {
               <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2">
                 <Download className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2">
+              <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2 " onClick={()=>router.push(`/workarea/${ws.id}`)}>
                 <ArrowRight className="w-5 h-5 " />
               </Button>
             </div>
