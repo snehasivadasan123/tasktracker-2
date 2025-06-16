@@ -107,6 +107,12 @@ const WorkAreapage = () => {
       setTaskColumnId(null);
     }
   }
+  function handleDeleteTask(taskId: number) {
+    workspaceData.tasks = workspaceData.tasks.filter(task => task.id !== taskId);
+    // Force re-render by resetting columns (since tasks aren't tracked by state)
+    setColumns([...columns]);
+  }
+
 
 
   return (
@@ -179,7 +185,8 @@ const WorkAreapage = () => {
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon"
+                          onClick={() => handleDeleteTask(task.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -241,7 +248,15 @@ const WorkAreapage = () => {
         isEdit={!!editingTask}
       />
 
-
+      <AddTaskDialog
+        open={isViewOpen}
+        onClose={() => {
+          setIsViewOpen(false);
+          setViewTask(null);
+        }}
+        task={viewTask}
+        isView={true}
+      />
     </div>
   );
 };
