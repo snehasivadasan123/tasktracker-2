@@ -49,7 +49,7 @@ const page = () => {
 
   return (
     <main className='p-8'>
-      <h1 className="text-lg font-medium flex items-center space-x-4">Workspace</h1>
+      <h1 className="text-lg font-medium flex items-center space-x-4 ml-30 p-5">Workspace</h1>
       <WorkspaceOverview
         workspaceDatas={workspaces}
         onAddWorkspace={handleAddWorkspace}

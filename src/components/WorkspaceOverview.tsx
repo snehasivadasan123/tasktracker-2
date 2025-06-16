@@ -27,14 +27,14 @@ const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace, onEditWorkspace, on
   // const [workspaceToEdit, setWorkspaceToEdit] = useState<Iworkspace | null>(null)
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-8 ">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-8 ml-30">
       {workspaceDatas.map((ws) => (
         <Card
           key={ws.id}
           className="flex flex-col justify-between bg-gray-100 border  hover:bg-white border-gray-200 rounded-none w-[340px] h-[200px] p-0"
         >
           <CardContent className="flex-1 flex flex-col justify-between p-6 pb-0">
-            <div className="text-lg font-semibold mb-8">{ws.title}</div>
+            <div className="text-lg font-semibold mb-8 ">{ws.title}</div>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2"
                 onClick={() => onEditWorkspace?.(ws)}

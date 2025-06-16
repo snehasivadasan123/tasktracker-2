@@ -17,7 +17,6 @@ const WorkAreapage = () => {
   const params = useParams();
   const worksid = Number(params.workId);
   const workspace = workspaceData.workspaces.find((ws) => ws.id === worksid);
-
   const [columns, setColumns] = useState(
     workspaceData.columns.filter((col) => col.workspaces_id === worksid)
   );
@@ -109,12 +108,8 @@ const WorkAreapage = () => {
   }
   function handleDeleteTask(taskId: number) {
     workspaceData.tasks = workspaceData.tasks.filter(task => task.id !== taskId);
-    // Force re-render by resetting columns (since tasks aren't tracked by state)
     setColumns([...columns]);
   }
-
-
-
   return (
     <div className="p-6 ml-20">
       <div className="flex items-center mb-6">
@@ -131,7 +126,7 @@ const WorkAreapage = () => {
           return (
             <div key={col.id}>
               <div className="w-[250px] bg-gray-100 shadow-sm p-2">
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex justify-between items-center mb-">
                   <h2 className="font-semibold">{col.title}</h2>
                   <div className="flex gap-1">
                     <Button
@@ -155,9 +150,9 @@ const WorkAreapage = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {tasks.map((task) => (
-                  <Card key={task.id} className="bg-gray-200 hover:bg-white p-2 shadow mt-10">
+                  <Card key={task.id} className="bg-gray-200 hover:bg-white p-2 shadow mt-10 rounded-none">
                     <div className="text-sm font-medium mb-2">{task.title}</div>
                     <div className="flex justify-between">
                       <div className="flex gap-1">
@@ -203,7 +198,8 @@ const WorkAreapage = () => {
 
               <Button
                 variant="outline"
-                className="w-full text-sm mt-6"
+                className="w-full text-sm mt-6 rounded-none"
+
                 onClick={() => {
                   setTaskColumnId(col.id);
                   setTaskDialogOpen(true);
@@ -214,8 +210,6 @@ const WorkAreapage = () => {
             </div>
           );
         })}
-
-
         <div
           className="w-[250px] h-[60px] flex items-center justify-center bg-white border border-dashed border-gray-300 cursor-pointer"
           onClick={() => setDialogOpen(true)}
@@ -223,8 +217,6 @@ const WorkAreapage = () => {
           <span className="text-gray-700 font-medium">+ Add column</span>
         </div>
       </div>
-
-
       <AddColumnDialog
         open={dialogOpen}
         onClose={() => {
@@ -234,14 +226,12 @@ const WorkAreapage = () => {
         onSave={handleAddColumn}
         initialTitle={editingColumn?.title}
       />
-
-
       <AddTaskDialog
         open={taskDialogOpen}
         onClose={() => {
-          setTaskDialogOpen(false);
-          setTaskColumnId(null);
-          setEditingTask(null); // reset editing
+          setTaskDialogOpen(false)
+          setTaskColumnId(null)
+          setEditingTask(null)
         }}
         onSave={handleAddTask}
         task={editingTask}
