@@ -15,14 +15,16 @@ import React, { useState } from "react";
 interface Props {
   workspaceDatas: Iworkspace[];
   onAddWorkspace?: () => void
+  onEditWorkspace?: (workspace: Iworkspace) => void
+  onDeleteWorkspace?: (id: number) => void
+  onDownloadWorkspace?: (workspace: Iworkspace) => void;
 }
 
-const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace }: Props) => {
+const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace, onEditWorkspace, onDeleteWorkspace, onDownloadWorkspace }: Props) => {
   console.log("the datas are", workspaceDatas)
   const router = useRouter()
-  const [editDialogOpen,setEditDialogOpen]=useState(false)
-  const [workspaceToEdit,setWorkspaceToEdit]=useState<Iworkspace|null>(null)
-
+  // const [editDialogOpen, setEditDialogOpen] = useState(false)
+  // const [workspaceToEdit, setWorkspaceToEdit] = useState<Iworkspace | null>(null)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-8 ">
@@ -35,17 +37,20 @@ const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace }: Props) => {
             <div className="text-lg font-semibold mb-8">{ws.title}</div>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2"
-              onClick={()=>onEditWorkspace?.(ws)}
+                onClick={() => onEditWorkspace?.(ws)}
               >
                 <Pencil className="w-5 h-5 " />
               </Button>
-              <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2">
+              <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2"
+                onClick={() => onDeleteWorkspace?.(ws.id)} >
                 <Trash2 className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2">
+              <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2"
+                onClick={() => onDownloadWorkspace?.(ws)}
+              >
                 <Download className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2 " onClick={()=>router.push(`/workarea/${ws.id}`)}>
+              <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2 " onClick={() => router.push(`/workarea/${ws.id}`)}>
                 <ArrowRight className="w-5 h-5 " />
               </Button>
             </div>
@@ -55,7 +60,7 @@ const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace }: Props) => {
           </div>
         </Card>
       ))}
-      <Card 
+      <Card
         onClick={onAddWorkspace}
         className="flex flex-col justify-center items-center bg-gray-100 hover:bg-white transition-colors border border-gray-200 rounded-none w-[340px] h-[200px] p-0 cursor-pointer"
       >

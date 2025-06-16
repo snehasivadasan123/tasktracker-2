@@ -12,16 +12,21 @@ import { Button } from "./ui/button";
 interface WorkspaceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (data: { type: string; title: string }) => void;
+  onSave: (data: { type: string; title: string }) => void
+  initialData?: { title: string } | null
+
 }
 
 export default function WorkspaceDialog({
   open,
   onOpenChange,
   onSave,
+  initialData
 }: WorkspaceDialogProps) {
-  const [title, setTitle] = React.useState("");
-
+  const [title, setTitle] = React.useState(initialData?.title || "");
+  React.useEffect(() => {
+    setTitle(initialData?.title || "");
+  }, [initialData])
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({ type: "workspace", title });
@@ -32,7 +37,9 @@ export default function WorkspaceDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create New Workspace</DialogTitle>
+          <DialogTitle>
+            {initialData ? "Edit Workspace" : "Create New Workspace"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -57,7 +64,9 @@ export default function WorkspaceDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">Create</Button>
+            <Button type="submit">
+              {initialData ? "Update" : "Create"}
+            </Button>
           </div>
         </form>
       </DialogContent>

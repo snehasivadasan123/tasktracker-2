@@ -1,58 +1,247 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import { workspaceData } from "@/data/workspaceData";
 import {
   Card,
-  CardAction,
   CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, ArrowLeft, EyeIcon, MoveIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AddColumnDialog } from "@/components/AddColumnDialog";
+import { AddTaskDialog } from "@/components/AddTaskDialog";
 
 const WorkAreapage = () => {
   const params = useParams();
   const worksid = Number(params.workId);
   const workspace = workspaceData.workspaces.find((ws) => ws.id === worksid);
-  const columns = workspaceData.columns.filter(
-    (col) => col.workspaces_id === worksid
+
+  const [columns, setColumns] = useState(
+    workspaceData.columns.filter((col) => col.workspaces_id === worksid)
   );
 
-  console.log("the worksid is", columns);
-  return (
-   <div>
-      <h1 className="text-xl font-semibold mb-6">{workspace?.title}</h1>
-      <div className="flex gap-6">
-        {columns.map((col) => (
-          <Card
-            key={col.id}
-            className="bg-gray-100 w-[220px] h-[50px] flex flex-col justify-between p-0 rounded-none"
-          >
-            <CardContent className="flex flex-row justify-between items-center h-full px-4 py-2">
-              <span className="font-medium">{col.title}</span>
-              <span className="flex gap-2">
-                <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2">
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </span>
-            </CardContent>
-          </Card>
-        ))}
+  const router = useRouter();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [taskColumnId, setTaskColumnId] = useState<number | null>(null);
+  const [editingColumn, setEditingColumn] = useState<{ id: number; title: string } | null>(null);
+  const [viewTask, setViewTask] = useState<{
+    title: string;
+    description: string;
+    attachmentUrl?: string;
+    fileName?: string;
+  } | null>(null)
+  const [editingTask, setEditingTask] = useState<{
+    id: number;
+    title: string;
+    description: string;
+    columns_id: number;
+    attachmentUrl?: string;
+    fileName?: string;
+  } | null>(null);
 
-        <Card className="w-[220px] h-[50px] flex items-center justify-center bg-white border border-dashed border-gray-300 rounded-none cursor-pointer">
-          <CardContent className="flex items-center justify-center w-full h-full px-4 py-2">
-            <span className="text-gray-700 font-medium">+ Add column</span>
-          </CardContent>
-        </Card>
+  const [isViewOpen, setIsViewOpen] = useState(false);
+
+  const createNewColumn = (title: string) => ({
+    id: Date.now(),
+    order: columns.length + 1,
+    workspaces_id: worksid,
+    title,
+    created_at: Date.now(),
+  });
+
+
+  function handleAddColumn(title: string): void {
+    if (editingColumn) {
+      const updatedCols = columns.map((col) =>
+        col.id === editingColumn.id ? { ...col, title } : col
+      );
+      setColumns(updatedCols);
+    } else {
+      const newCol = createNewColumn(title);
+      setColumns([...columns, newCol]);
+    }
+
+    setDialogOpen(false);
+    setEditingColumn(null);
+  }
+
+  function handleDeleteColumn(colId: number) {
+    const updatedCols = columns.filter(col => col.id !== colId);
+    setColumns(updatedCols);
+    workspaceData.tasks = workspaceData.tasks.filter(task => task.columns_id !== colId);
+  }
+
+  function handleAddTask(title: string, description: string, file: File | null) {
+    if (taskColumnId !== null) {
+      if (editingTask) {
+        // Update existing task
+        const taskIndex = workspaceData.tasks.findIndex(t => t.id === editingTask.id);
+        if (taskIndex !== -1) {
+          workspaceData.tasks[taskIndex] = {
+            ...workspaceData.tasks[taskIndex],
+            title,
+            description,
+            attachmentUrl: file ? URL.createObjectURL(file) : editingTask.attachmentUrl,
+            fileName: file ? file.name : editingTask.fileName,
+          };
+        }
+        setEditingTask(null);
+      } else {
+        // Add new task
+        const newTask = {
+          id: Date.now(),
+          columns_id: taskColumnId,
+          title,
+          description,
+          attachmentUrl: file ? URL.createObjectURL(file) : "",
+          fileName: file?.name || "",
+          created_at: Date.now(),
+        };
+        workspaceData.tasks.push(newTask);
+      }
+
+      setTaskDialogOpen(false);
+      setTaskColumnId(null);
+    }
+  }
+
+
+  return (
+    <div className="p-6 ml-20">
+      <div className="flex items-center mb-6">
+        <Button variant="ghost" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-xl font-semibold ml-2">{workspace?.title}</h1>
       </div>
+
+      <div className="flex items-start gap-4 overflow-x-auto">
+        {columns.map((col) => {
+          const tasks = workspaceData.tasks.filter((task) => task.columns_id === col.id);
+
+          return (
+            <div key={col.id}>
+              <div className="w-[250px] bg-gray-100 shadow-sm p-2">
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="font-semibold">{col.title}</h2>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setEditingColumn({ id: col.id, title: col.title });
+                        setDialogOpen(true);
+                      }}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteColumn(col.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {tasks.map((task) => (
+                  <Card key={task.id} className="bg-gray-200 hover:bg-white p-2 shadow mt-10">
+                    <div className="text-sm font-medium mb-2">{task.title}</div>
+                    <div className="flex justify-between">
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setViewTask({
+                              title: task.title,
+                              description: task.description,
+                              attachmentUrl: task.attachmentUrl,
+                              fileName: task.fileName,
+                            });
+                            setIsViewOpen(true);
+                          }}
+                        >
+                          <EyeIcon className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon"
+                          onClick={() => {
+                            setEditingTask(task);
+                            setTaskColumnId(task.columns_id);
+                            setTaskDialogOpen(true);
+                          }}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <Button variant="ghost" size="icon">
+                        <MoveIcon className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(task.created_at).toDateString()}
+                    </p>
+                  </Card>
+                ))}
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full text-sm mt-6"
+                onClick={() => {
+                  setTaskColumnId(col.id);
+                  setTaskDialogOpen(true);
+                }}
+              >
+                + Add task
+              </Button>
+            </div>
+          );
+        })}
+
+
+        <div
+          className="w-[250px] h-[60px] flex items-center justify-center bg-white border border-dashed border-gray-300 cursor-pointer"
+          onClick={() => setDialogOpen(true)}
+        >
+          <span className="text-gray-700 font-medium">+ Add column</span>
+        </div>
+      </div>
+
+
+      <AddColumnDialog
+        open={dialogOpen}
+        onClose={() => {
+          setDialogOpen(false);
+          setEditingColumn(null);
+        }}
+        onSave={handleAddColumn}
+        initialTitle={editingColumn?.title}
+      />
+
+
+      <AddTaskDialog
+        open={taskDialogOpen}
+        onClose={() => {
+          setTaskDialogOpen(false);
+          setTaskColumnId(null);
+          setEditingTask(null); // reset editing
+        }}
+        onSave={handleAddTask}
+        task={editingTask}
+        isEdit={!!editingTask}
+      />
+
+
     </div>
   );
 };

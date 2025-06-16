@@ -40,7 +40,9 @@ export const workspaceData: IWorkspaceData = {
       "workspaces_id": 1,
       "title": "Column 1 Task 1",
       "description": "Task description here",
-      "created_at": 1651479365800
+      "created_at": 1651479365800,
+      fileName: undefined,
+      attachmentUrl: undefined
     },
     {
       "id": 2,
@@ -49,7 +51,9 @@ export const workspaceData: IWorkspaceData = {
       "workspaces_id": 1,
       "title": "Column 1 Task 2",
       "description": "",
-      "created_at": 1651479365800
+      "created_at": 1651479365800,
+      fileName: undefined,
+      attachmentUrl: undefined
     },
     {
       "id": 3,
@@ -58,7 +62,9 @@ export const workspaceData: IWorkspaceData = {
       "workspaces_id": 1,
       "title": "Column 1 Task 3",
       "description": "",
-      "created_at": 1651479365800
+      "created_at": 1651479365800,
+      fileName: undefined,
+      attachmentUrl: undefined
     },
     {
       "id": 4,
@@ -67,7 +73,9 @@ export const workspaceData: IWorkspaceData = {
       "workspaces_id": 1,
       "title": "Column 2 Task 1",
       "description": "",
-      "created_at": 1651479365800
+      "created_at": 1651479365800,
+      fileName: undefined,
+      attachmentUrl: undefined
     },
     {
       "id": 5,
@@ -76,7 +84,9 @@ export const workspaceData: IWorkspaceData = {
       "workspaces_id": 1,
       "title": "Column 3 Task 1",
       "description": "",
-      "created_at": 1651479365800
+      "created_at": 1651479365800,
+      fileName: undefined,
+      attachmentUrl: undefined
     }
   ],
   "attachments": [
@@ -86,7 +96,7 @@ export const workspaceData: IWorkspaceData = {
       "workspaces_id": 1,
       "name": "react.png",
       "size": 34973,
-      "src": "data:image/png;base64,..." // Truncated for brevity
+      "src": "data:image/png;base64,..."
     }
   ]
 }; 

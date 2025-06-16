@@ -14,10 +14,12 @@ export interface Icolumn {
 }
 
 export interface Itask {
+  fileName: string | undefined;
+  attachmentUrl: string | undefined;
   id: number;
-  order: number;
+  order?: number;
   columns_id: number;
-  workspaces_id: number;
+  workspaces_id?: number;
   title: string;
   description: string;
   created_at: number;
