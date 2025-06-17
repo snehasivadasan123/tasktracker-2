@@ -28,9 +28,11 @@ export default function Page({
       <WorkspaceOverview
         workspaceDatas={workspaces}
         onAddWorkspace={onAddWorkspace}
-        onViewWorkspace={onViewWorkspace}
         onEditWorkspace={onEditWorkspace}
-        onDeleteWorkspace={onDeleteWorkspace}
+        onDeleteWorkspace={onDeleteWorkspace ? (id) => {
+          const ws = workspaces.find(w => w.id === id);
+          if (ws) onDeleteWorkspace(ws);
+        } : undefined}
         onDownloadWorkspace={onDownloadWorkspace}
       />
     </div>
