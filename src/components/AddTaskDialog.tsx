@@ -27,6 +27,7 @@ export function AddTaskDialog({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null)
+  const [errors, setErrors] = useState<{title?: string, description?: string, file?: string}>({});
   useEffect(() => {
     if (task) {
       setTitle(task.title);
@@ -38,12 +39,19 @@ export function AddTaskDialog({
   }, [task]);
 
   const handleSubmit = () => {
-    if (title.trim() && onSave) {
-      if (onSave) {
-        onSave(title, description, file);
-      } setTitle("");
-      setDescription("");
+    const newErrors: {title?: string, description?: string, file?: string} = {};
+    if (!title.trim()) newErrors.title = "Task title is required.";
+    if (!description.trim()) newErrors.description = "Task description is required.";
+    if (!file) newErrors.file = "Task attachment is required.";
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+    if (onSave) {
+      onSave(title, description, file);
     }
+    setTitle("");
+    setDescription("");
+    setFile(null);
+    setErrors({});
   };
 
   return (
@@ -69,6 +77,7 @@ export function AddTaskDialog({
               disabled={isView}
 
             />
+            {errors.title && <span className="text-red-500 text-xs mt-1">{errors.title}</span>}
           </div>
 
           <div>
@@ -82,6 +91,7 @@ export function AddTaskDialog({
 
               rows={4}
             />
+            {errors.description && <span className="text-red-500 text-xs mt-1">{errors.description}</span>}
           </div>
 
           <div>
@@ -110,6 +120,7 @@ export function AddTaskDialog({
                 disabled={isView}
               />
             )}
+            {errors.file && <span className="text-red-500 text-xs mt-1">{errors.file}</span>}
           </div>
         </div>
 

@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
@@ -11,17 +10,22 @@ interface Props {
 }
 export const AddColumnDialog = ({ open, onClose, onSave, initialTitle = "" }: Props) => {
   const [title, setTitle] = useState("")
+  const [error, setError] = useState("");
 
   const handleSave = () => {
-    if (title.trim()) {
-      onSave(title.trim());
-      setTitle("");
-      onClose()
+    if (!title.trim()) {
+      setError("Column title is required.");
+      return;
     }
+    setError("");
+    onSave(title.trim());
+    setTitle("");
+    onClose();
   }
   useEffect(() => {
     if (open) {
       setTitle(initialTitle);
+      setError("");
     }
   }, [open, initialTitle]);
   return (
@@ -41,6 +45,7 @@ export const AddColumnDialog = ({ open, onClose, onSave, initialTitle = "" }: Pr
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
+          {error && <span className="text-red-500 text-xs mt-1">{error}</span>}
           <div className="flex justify-end">
             <Button onClick={handleSave}>Save</Button>
           </div>

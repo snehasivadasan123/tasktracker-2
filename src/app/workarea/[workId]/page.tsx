@@ -11,6 +11,51 @@ import { AddColumnDialog } from "@/components/AddColumnDialog";
 import { AddTaskDialog } from "@/components/AddTaskDialog"
 import { notFound } from "next/navigation";
 
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  horizontalListSortingStrategy,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableColumn({ id, children }: { id: string | number; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    minWidth: 250,
+    marginRight: 16,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      {children}
+    </div>
+  );
+}
+
+function SortableTask({ id, children }: { id: string | number; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    marginBottom: 12,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      {children}
+    </div>
+  );
+}
+
 const WorkAreapage = () => {
   const params = useParams();
   const worksid = Number(params.workId);
@@ -20,6 +65,7 @@ const WorkAreapage = () => {
   const [loading, setLoading] = useState(true)
   console.log("the task iss???????", tasks)
   console.log("the columns iss???????", columns)
+  const sensors = useSensors(useSensor(PointerSensor));
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -254,6 +300,81 @@ const WorkAreapage = () => {
     }
   }
 
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over) return;
+
+    // 1. Column drag
+    if (columns.some(col => col.id === active.id)) {
+      const oldIndex = columns.findIndex(col => col.id === active.id);
+      const newIndex = columns.findIndex(col => col.id === over.id);
+      if (oldIndex !== newIndex) {
+        setColumns(arrayMove(columns, oldIndex, newIndex));
+      }
+      return;
+    }
+
+    // 2. Task drag
+    const activeTask = tasks.find(t => t.id === active.id);
+    const overTask = tasks.find(t => t.id === over.id);
+
+    if (activeTask && overTask) {
+      // a) Same column: reorder
+      if (activeTask.columns_id === overTask.columns_id) {
+        const columnTasks = tasks.filter(
+          t => t.columns_id === activeTask.columns_id
+        );
+        const oldIndex = columnTasks.findIndex(t => t.id === active.id);
+        const newIndex = columnTasks.findIndex(t => t.id === over.id);
+
+        const reordered = arrayMove(columnTasks, oldIndex, newIndex);
+
+        // Replace the tasks in the column with the reordered ones
+        let reorderIdx = 0;
+        const newTasks = tasks.map(t => {
+          if (t.columns_id === activeTask.columns_id) {
+            return reordered[reorderIdx++];
+          }
+          return t;
+        });
+        setTasks(newTasks);
+      } else {
+        // b) Different column: move to new column, place after the task it was dropped on
+        const newTasks = tasks.map(t =>
+          t.id === active.id ? { ...t, columns_id: overTask.columns_id } : t
+        );
+
+        // Move the task to the correct position in the new column
+        const destColumnTasks = newTasks.filter(
+          t => t.columns_id === overTask.columns_id
+        );
+        const movingTask = newTasks.find(t => t.id === active.id);
+        const filtered = destColumnTasks.filter(t => t.id !== active.id);
+        const overIndex = filtered.findIndex(t => t.id === over.id);
+
+        filtered.splice(overIndex + 1, 0, movingTask);
+
+        // Rebuild the tasks array with the reordered destination column
+        let destIdx = 0;
+        const finalTasks = newTasks.map(t => {
+          if (t.columns_id === overTask.columns_id) {
+            return filtered[destIdx++];
+          }
+          return t;
+        });
+        setTasks(finalTasks);
+      }
+    } else if (activeTask && !overTask) {
+      // Dropped on empty column area: move to end of that column
+      const columnId = columns.find(col => col.id === over.id)?.id;
+      if (columnId) {
+        setTasks(tasks.map(t =>
+          t.id === active.id ? { ...t, columns_id: columnId } : t
+        ));
+      }
+    }
+  }
+
   if (loading) {
     return <div className="p-6 text-center">Loading...</div>;
   }
@@ -266,8 +387,6 @@ const WorkAreapage = () => {
     );
   }
 
-
-
   return (
     <div className="p-6 ml-20">
       <div className="flex items-center mb-6">
@@ -277,111 +396,126 @@ const WorkAreapage = () => {
         <h1 className="text-xl font-semibold ml-2">{workspace?.title}</h1>
       </div>
 
-      <div className="flex items-start gap-4 overflow-x-auto">
-        {columns.map((col) => {
-          console.log("Current column ID:", col.id, typeof col.id);
-          console.log("All task columns_id:", tasks.map(t => [t.id, t.columns_id, typeof t.columns_id]));
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={columns.map(col => col.id)}
+          strategy={horizontalListSortingStrategy}
+        >
+          <div className="flex items-start gap-4 overflow-x-auto">
+            {columns.map((col) => {
+              console.log("Current column ID:", col.id, typeof col.id);
+              console.log("All task columns_id:", tasks.map(t => [t.id, t.columns_id, typeof t.columns_id]));
 
-          const columnTasks = tasks.filter(
-            (task) => Number(task.columns_id) === Number(col.id)
-          );
-          console.log("the columntask issssssss=============>>>>///", columnTasks)
+              const columnTasks = tasks.filter(
+                (task) => Number(task.columns_id) === Number(col.id)
+              );
+              console.log("the columntask issssssss=============>>>>///", columnTasks)
 
 
-          return (
-            <div key={col.id}>
-              <div className="w-[250px] bg-gray-100 shadow-sm p-2">
-                <div className="flex justify-between items-center mb-">
-                  <h2 className="font-semibold">{col.title}</h2>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setEditingColumn({ id: col.id, title: col.title });
-                        setDialogOpen(true);
-                      }}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteColumn(col.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {columnTasks.map((task) => (
-                  <Card key={task.id} className="bg-gray-200 hover:bg-white p-2 shadow mt-10 rounded-none">
-                    <div className="text-sm font-medium mb-2">{task.title}</div>
-                    <div className="flex justify-between">
+              return (
+                <SortableColumn key={col.id} id={col.id}>
+                  <div className="w-[250px] bg-gray-100 shadow-sm p-2">
+                    <div className="flex justify-between items-center mb-">
+                      <h2 className="font-semibold">{col.title}</h2>
                       <div className="flex gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            setViewTask({
-                              title: task.title,
-                              description: task.description,
-                              attachmentUrl: task.attachmentUrl,
-                              fileName: task.fileName,
-                            });
-                            setIsViewOpen(true);
-                          }}
-                        >
-                          <EyeIcon className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon"
-                          onClick={() => {
-                            setEditingTask(task);
-                            setTaskColumnId(task.columns_id);
-                            setTaskDialogOpen(true);
+                            setEditingColumn({ id: col.id, title: col.title });
+                            setDialogOpen(true);
                           }}
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon"
-                          onClick={() => handleDeleteTask(task.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteColumn(col.id)}
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
-                      <Button variant="ghost" size="icon">
-                        <MoveIcon className="w-4 h-4" />
-                      </Button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(task.created_at).toDateString()}
-                    </p>
-                  </Card>
-                ))}
-              </div>
-
-              <Button
-                variant="outline"
-                className="w-full text-sm mt-6 rounded-none"
-
-                onClick={() => {
-                  setTaskColumnId(col.id);
-                  setTaskDialogOpen(true);
-                }}
-              >
-                + Add task
-              </Button>
+                  </div>
+                  <SortableContext
+                    items={tasks.filter(t => Number(t.columns_id) === Number(col.id)).map(t => t.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-3">
+                      {tasks.filter(t => Number(t.columns_id) === Number(col.id)).map((task) => (
+                        <SortableTask key={task.id} id={task.id}>
+                          <Card className="bg-gray-200 hover:bg-white p-2 shadow mt-10 rounded-none">
+                            <div className="text-sm font-medium mb-2">{task.title}</div>
+                            <div className="flex justify-between">
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setViewTask({
+                                      title: task.title,
+                                      description: task.description,
+                                      attachmentUrl: task.attachmentUrl,
+                                      fileName: task.fileName,
+                                    });
+                                    setIsViewOpen(true);
+                                  }}
+                                >
+                                  <EyeIcon className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon"
+                                  onClick={() => {
+                                    setEditingTask(task);
+                                    setTaskColumnId(task.columns_id);
+                                    setTaskDialogOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon"
+                                  onClick={() => handleDeleteTask(task.id)}>
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              <Button variant="ghost" size="icon">
+                                <MoveIcon className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {new Date(task.created_at).toDateString()}
+                            </p>
+                          </Card>
+                        </SortableTask>
+                      ))}
+                    </div>
+                  </SortableContext>
+                  <Button
+                    variant="outline"
+                    className="w-full text-sm mt-6 rounded-none"
+                    onClick={() => {
+                      setTaskColumnId(col.id);
+                      setTaskDialogOpen(true);
+                    }}
+                  >
+                    + Add task
+                  </Button>
+                </SortableColumn>
+              );
+            })}
+            <div
+              className="w-[250px] h-[60px] flex items-center justify-center bg-white border border-dashed border-gray-300 cursor-pointer"
+              onClick={() => setDialogOpen(true)}
+            >
+              <span className="text-gray-700 font-medium">+ Add column</span>
             </div>
-          );
-        })}
-        <div
-          className="w-[250px] h-[60px] flex items-center justify-center bg-white border border-dashed border-gray-300 cursor-pointer"
-          onClick={() => setDialogOpen(true)}
-        >
-          <span className="text-gray-700 font-medium">+ Add column</span>
-        </div>
-      </div>
+          </div>
+        </SortableContext>
+      </DndContext>
       <AddColumnDialog
         open={dialogOpen}
         onClose={() => {
