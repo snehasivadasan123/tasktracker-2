@@ -1,0 +1,66 @@
+{
+  "workspaces": [
+    {
+      "id": "1",
+      "title": "Project management",
+      "date": "Tue Jun 17 2025",
+      "created_at": 1651478883677
+    },
+    {
+      "id": "2",
+      "title": "Digital Marketing Course Timeline",
+      "date": "Tue Jun 17 2025",
+      "created_at": 1718277483677
+    }
+  ],
+  "columns": [
+    {
+      "id": "2",
+      "title": "In Progress",
+      "order": 2,
+      "workspaces_id": 1,
+      "created_at": 1750156515282
+    },
+    {
+      "id": "3",
+      "title": "Completed",
+      "order": 3,
+      "workspaces_id": 1,
+      "created_at": 1750156521208
+    },
+    {
+      "id": "5",
+      "title": "In Progress",
+      "order": 2,
+      "workspaces_id": 2,
+      "created_at": 1750156636897
+    },
+    {
+      "id": "6",
+      "title": "Completed",
+      "order": 3,
+      "workspaces_id": 2,
+      "created_at": 1750156739022
+    },
+    {
+      "id": "7",
+      "title": "To Do",
+      "order": 3,
+      "workspaces_id": 1,
+      "created_at": 1750157403719
+    }
+  ],
+  "tasks": [
+    {
+      "id": "29c2",
+      "columns_id": "2",
+      "title": "Column Task1..1",
+      "description": "",
+      "attachmentUrl": "",
+      "fileName": "",
+      "created_at": 1750157551935,
+      "workspaces_id": 1
+    }
+  ],
+  "attachments": []
+}

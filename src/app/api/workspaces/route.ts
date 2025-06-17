@@ -18,7 +18,7 @@ export async function GET() {
     console.error('API error:', error);
     return new NextResponse(
       JSON.stringify({ error: 'Failed to fetch workspace data' }),
-      { 
+      {
         status: 500,
         headers: {
           'Content-Type': 'application/json',

@@ -1,25 +1,59 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { workspaceData } from "@/data/workspaceData";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+//import { workspaceData } from "@/data/workspaceData";
+import { Card, CardContent, } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, ArrowLeft, EyeIcon, MoveIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AddColumnDialog } from "@/components/AddColumnDialog";
-import { AddTaskDialog } from "@/components/AddTaskDialog";
+import { AddTaskDialog } from "@/components/AddTaskDialog"
+import { notFound } from "next/navigation";
 
 const WorkAreapage = () => {
   const params = useParams();
   const worksid = Number(params.workId);
-  const workspace = workspaceData.workspaces.find((ws) => ws.id === worksid);
-  const [columns, setColumns] = useState(
-    workspaceData.columns.filter((col) => col.workspaces_id === worksid)
-  );
+  const [workspace, setWorkspace] = useState<{ id: number; title: string } | null>(null);
+  const [columns, setColumns] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true)
+  console.log("the task iss???????", tasks)
+  console.log("the columns iss???????", columns)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const wsRes = await fetch(`http://localhost:3001/workspaces/${worksid}`)
+        console.log("the********************", wsRes)
+        if (!wsRes.ok) {
+          console.log(`Workspace with ID ${worksid} not found.`);
+          notFound()
+          return;
+        }
+
+
+        const workspaceData = await wsRes.json();
+
+        const [colRes, taskRes] = await Promise.all([
+          fetch(`http://localhost:3001/columns?workspaces_id=${worksid}`),
+          fetch(`http://localhost:3001/tasks?workspaces_id=${worksid}`),
+        ]);
+        console.log("<<<<<<<<<<<<<<<<<<<<<<<<", taskRes)
+        const columns = colRes.ok ? await colRes.json() : [];
+        const tasks = taskRes.ok ? await taskRes.json() : [];
+
+        setWorkspace(workspaceData);
+        setColumns(columns);
+        setTasks(tasks);
+      } catch (error) {
+        console.error("Failed to fetch workspace data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [worksid]);
 
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -40,9 +74,7 @@ const WorkAreapage = () => {
     attachmentUrl?: string;
     fileName?: string;
   } | null>(null);
-
   const [isViewOpen, setIsViewOpen] = useState(false);
-
   const createNewColumn = (title: string) => ({
     id: Date.now(),
     order: columns.length + 1,
@@ -50,66 +82,192 @@ const WorkAreapage = () => {
     title,
     created_at: Date.now(),
   });
-
-
-  function handleAddColumn(title: string): void {
+  async function handleAddColumn(title: string): Promise<void> {
     if (editingColumn) {
+      console.log("yessss")
       const updatedCols = columns.map((col) =>
         col.id === editingColumn.id ? { ...col, title } : col
       );
       setColumns(updatedCols);
+
+      try {
+        console.log("editing coloumn____________")
+        await fetch(`http://localhost:3001/columns/${editingColumn.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title }),
+        });
+      } catch (err) {
+        console.error("Failed to update column:", err);
+      }
     } else {
-      const newCol = createNewColumn(title);
-      setColumns([...columns, newCol]);
+      const allColumnsRes = await fetch("http://localhost:3001/columns");
+      const allColumns = allColumnsRes.ok ? await allColumnsRes.json() : [];
+      const maxColumnId = allColumns.reduce((max: number, col: { id: string; }) => {
+        const numericId = parseInt(col.id);
+        return isNaN(numericId) ? max : Math.max(max, numericId);
+      }, 0);
+      const newCol = {
+        id: String(maxColumnId + 1),
+        title,
+        order: columns.length + 1,
+        workspaces_id: worksid,
+        created_at: Date.now(),
+      };
+
+      try {
+        const response = await fetch("http://localhost:3001/columns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newCol),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to add column");
+        }
+
+        const savedCol = await response.json();
+        setColumns([...columns, savedCol]);
+      } catch (err) {
+        console.error("Error adding column:", err);
+      }
     }
 
     setDialogOpen(false);
     setEditingColumn(null);
   }
 
-  function handleDeleteColumn(colId: number) {
-    const updatedCols = columns.filter(col => col.id !== colId);
-    setColumns(updatedCols);
-    workspaceData.tasks = workspaceData.tasks.filter(task => task.columns_id !== colId);
+  async function handleDeleteColumn(colId: number) {
+    try {
+
+      const colRes = await fetch(`http://localhost:3001/columns/${colId}`, {
+        method: "DELETE",
+      });
+
+      if (!colRes.ok) throw new Error("Failed to delete column");
+
+
+      const relatedTasks = tasks.filter((task) => Number(task.columns_id) === Number(colId));
+
+      await Promise.all(
+        relatedTasks.map((task) =>
+          fetch(`http://localhost:3001/tasks/${task.id}`, {
+            method: "DELETE",
+          })
+        )
+      );
+
+
+      setColumns(columns.filter((col) => col.id !== colId));
+      setTasks(tasks.filter((task) => task.columns_id !== colId));
+    } catch (error) {
+      console.error("Error deleting column and tasks:", error);
+    }
   }
 
-  function handleAddTask(title: string, description: string, file: File | null) {
+
+  async function handleAddTask(title: string, description: string, file: File | null) {
     if (taskColumnId !== null) {
       if (editingTask) {
-        // Update existing task
-        const taskIndex = workspaceData.tasks.findIndex(t => t.id === editingTask.id);
-        if (taskIndex !== -1) {
-          workspaceData.tasks[taskIndex] = {
-            ...workspaceData.tasks[taskIndex],
-            title,
-            description,
-            attachmentUrl: file ? URL.createObjectURL(file) : editingTask.attachmentUrl,
-            fileName: file ? file.name : editingTask.fileName,
-          };
+        const updatedTasks = tasks.map((t) =>
+          t.id === editingTask.id
+            ? {
+              ...t,
+              title,
+              description,
+              attachmentUrl: file ? URL.createObjectURL(file) : t.attachmentUrl,
+              fileName: file ? file.name : t.fileName,
+            }
+            : t
+        );
+        setTasks(updatedTasks);
+
+        try {
+          await fetch(`http://localhost:3001/tasks/${editingTask.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title,
+              description,
+              attachmentUrl: file ? URL.createObjectURL(file) : editingTask.attachmentUrl,
+              fileName: file ? file.name : editingTask.fileName,
+            }),
+          });
+        } catch (err) {
+          console.error("Failed to update task:", err);
         }
+
         setEditingTask(null);
-      } else {
-        // Add new task
+      }
+
+
+
+
+      else {
         const newTask = {
-          id: Date.now(),
           columns_id: taskColumnId,
           title,
           description,
           attachmentUrl: file ? URL.createObjectURL(file) : "",
           fileName: file?.name || "",
           created_at: Date.now(),
+          workspaces_id: worksid,
         };
-        workspaceData.tasks.push(newTask);
+
+        try {
+          const response = await fetch("http://localhost:3001/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newTask),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to add task");
+          }
+
+          const savedTask = await response.json();
+          setTasks([...tasks, savedTask]);
+        } catch (err) {
+          console.error("Error adding task:", err);
+        }
       }
 
       setTaskDialogOpen(false);
       setTaskColumnId(null);
     }
   }
-  function handleDeleteTask(taskId: number) {
-    workspaceData.tasks = workspaceData.tasks.filter(task => task.id !== taskId);
-    setColumns([...columns]);
+
+
+  async function handleDeleteTask(taskId: number) {
+    try {
+      const res = await fetch(`http://localhost:3001/tasks/${taskId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete task");
+      }
+
+      setTasks(tasks.filter((task) => task.id !== taskId));
+    } catch (err) {
+      console.error("Failed to delete task:", err);
+    }
   }
+
+  if (loading) {
+    return <div className="p-6 text-center">Loading...</div>;
+  }
+
+  if (!workspace && !loading) {
+    return (
+      <div className="p-6 text-center text-red-500">
+        Workspace not found.
+      </div>
+    );
+  }
+
+
+
   return (
     <div className="p-6 ml-20">
       <div className="flex items-center mb-6">
@@ -121,7 +279,14 @@ const WorkAreapage = () => {
 
       <div className="flex items-start gap-4 overflow-x-auto">
         {columns.map((col) => {
-          const tasks = workspaceData.tasks.filter((task) => task.columns_id === col.id);
+          console.log("Current column ID:", col.id, typeof col.id);
+          console.log("All task columns_id:", tasks.map(t => [t.id, t.columns_id, typeof t.columns_id]));
+
+          const columnTasks = tasks.filter(
+            (task) => Number(task.columns_id) === Number(col.id)
+          );
+          console.log("the columntask issssssss=============>>>>///", columnTasks)
+
 
           return (
             <div key={col.id}>
@@ -151,7 +316,7 @@ const WorkAreapage = () => {
               </div>
 
               <div className="space-y-3">
-                {tasks.map((task) => (
+                {columnTasks.map((task) => (
                   <Card key={task.id} className="bg-gray-200 hover:bg-white p-2 shadow mt-10 rounded-none">
                     <div className="text-sm font-medium mb-2">{task.title}</div>
                     <div className="flex justify-between">

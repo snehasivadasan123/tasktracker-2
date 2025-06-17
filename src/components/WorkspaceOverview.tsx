@@ -21,7 +21,7 @@ interface Props {
 }
 
 const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace, onEditWorkspace, onDeleteWorkspace, onDownloadWorkspace }: Props) => {
-  console.log("the datas are", workspaceDatas)
+  console.log("the datas are???????????", workspaceDatas)
   const router = useRouter()
   // const [editDialogOpen, setEditDialogOpen] = useState(false)
   // const [workspaceToEdit, setWorkspaceToEdit] = useState<Iworkspace | null>(null)
