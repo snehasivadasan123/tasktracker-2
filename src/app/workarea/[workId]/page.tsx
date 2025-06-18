@@ -28,6 +28,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import Board from '@/components/WorkArea/Board';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -366,134 +367,18 @@ const WorkAreapage = () => {
         </Button>
         <h1 className="text-xl font-semibold ml-2">{workspace?.title}</h1>
       </div>
-
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
+      <Board
+        columns={columns}
+        tasks={tasks}
+        onEditColumn={(col) => { setEditingColumn({ id: col.id, title: col.title }); setDialogOpen(true); }}
+        onDeleteColumn={(col) => handleDeleteColumn({ colId: col.id })}
+        onAddTask={(col) => { setTaskColumnId(col.id); setTaskDialogOpen(true); }}
+        onViewTask={(task) => { setViewTask({ title: task.title, description: task.description, attachmentUrl: task.attachmentUrl, fileName: task.fileName }); setIsViewOpen(true); }}
+        onEditTask={(task) => { setEditingTask(task); setTaskColumnId(task.columns_id); setTaskDialogOpen(true); }}
+        onDeleteTask={(task) => handleDeleteTask({ taskId: task.id })}
         onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={columns.map(col => col.id)}
-          strategy={horizontalListSortingStrategy}
-        >
-          <div className="flex items-start gap-4 overflow-x-auto">
-            {columns.map((col) => {
-              console.log("Current column ID:", col.id, typeof col.id);
-              console.log("All task columns_id:", tasks.map(t => [t.id, t.columns_id, typeof t.columns_id]));
-
-              const columnTasks = tasks.filter(
-                (task) => Number(task.columns_id) === Number(col.id)
-              );
-
-
-              return (
-                <SortableColumn key={col.id} id={col.id}>
-                  <div className="w-[250px] bg-gray-100 shadow-sm p-2">
-                    <div className="flex justify-between items-center mb-">
-                      <h2 className="font-semibold">{col.title}</h2>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={() => {
-
-                            setEditingColumn({ id: col.id, title: col.title });
-                            setDialogOpen(true);
-                          }}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={() => handleDeleteColumn({ colId: col.id })}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  <SortableContext
-                    items={tasks.filter(t => Number(t.columns_id) === Number(col.id)).map(t => t.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-3">
-                      {tasks.filter(t => Number(t.columns_id) === Number(col.id)).map((task) => (
-                        <SortableTask key={task.id} id={task.id}>
-                          <Card className="bg-gray-200 hover:bg-white p-2 shadow mt-10 rounded-none">
-                            <div className="text-sm font-medium mb-2">{task.title}</div>
-                            <div className="flex justify-between">
-                              <div className="flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onPointerDown={(e) => e.stopPropagation()}
-                                  onClick={() => {
-
-                                    setViewTask({
-                                      title: task.title,
-                                      description: task.description,
-                                      attachmentUrl: task.attachmentUrl,
-                                      fileName: task.fileName,
-                                    });
-                                    setIsViewOpen(true);
-                                  }}
-                                >
-                                  <EyeIcon className="w-4 h-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon"
-                                  onPointerDown={(e) => e.stopPropagation()}
-                                  onClick={() => {
-                                    setEditingTask(task);
-                                    setTaskColumnId(task.columns_id);
-                                    setTaskDialogOpen(true);
-                                  }}
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon"
-                                  onPointerDown={(e) => e.stopPropagation()}
-                                  onClick={() => handleDeleteTask({ taskId: task.id })}>
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                              <Button variant="ghost" size="icon">
-                                <MoveIcon className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {new Date(task.created_at).toDateString()}
-                            </p>
-                          </Card>
-                        </SortableTask>
-                      ))}
-                    </div>
-                  </SortableContext>
-                  <Button
-                    variant="outline"
-                    className="w-full text-sm mt-6 rounded-none"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => {
-                      setTaskColumnId(col.id);
-                      setTaskDialogOpen(true);
-                    }}
-                  >
-                    + Add task
-                  </Button>
-                </SortableColumn>
-              );
-            })}
-            <div
-              className="w-[250px] h-[60px] flex items-center justify-center bg-white border border-dashed border-gray-300 cursor-pointer"
-              onClick={() => setDialogOpen(true)}
-            >
-              <span className="text-gray-700 font-medium">+ Add column</span>
-            </div>
-          </div>
-        </SortableContext>
-      </DndContext>
+        onAddColumn={() => setDialogOpen(true)}
+      />
       <AddColumnDialog
         open={dialogOpen}
         onClose={() => {
@@ -514,7 +399,6 @@ const WorkAreapage = () => {
         task={editingTask}
         isEdit={!!editingTask}
       />
-
       <AddTaskDialog
         open={isViewOpen}
         onClose={() => {

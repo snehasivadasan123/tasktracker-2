@@ -23,14 +23,14 @@
     {
       "id": "2",
       "title": "In Progress",
-      "order": 2,
+      "order": 0,
       "workspaces_id": 1,
       "created_at": 1750156515282
     },
     {
       "id": "3",
       "title": "Completed",
-      "order": 0,
+      "order": 1,
       "workspaces_id": 1,
       "created_at": 1750156521208
     },
@@ -51,7 +51,7 @@
     {
       "id": "7",
       "title": "To Do",
-      "order": 1,
+      "order": 2,
       "workspaces_id": 1,
       "created_at": 1750229490146
     },
@@ -114,7 +114,8 @@
       "attachmentUrl": "blob:http://localhost:3000/5cab2aaa-5201-4b26-8409-5e0296aec9c1",
       "fileName": "istockphoto-494571964-612x612.jpg",
       "created_at": 1750229479151,
-      "workspaces_id": 1
+      "workspaces_id": 1,
+      "order": 1
     },
     {
       "id": "8eed",
@@ -125,6 +126,17 @@
       "fileName": "close-up-squirrel-wooden-post_1048944-30370286.avif",
       "created_at": 1750229669536,
       "workspaces_id": 1
+    },
+    {
+      "id": "2f45",
+      "columns_id": "3",
+      "title": "jhjh",
+      "description": "jdhjd",
+      "attachmentUrl": "blob:http://localhost:3000/3d2f58df-a6fd-484d-9798-98fedddf153c",
+      "fileName": "postgres.jpg",
+      "created_at": 1750270540930,
+      "workspaces_id": 1,
+      "order": 0
     }
   ],
   "attachments": []
