@@ -1,61 +1,68 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
+import { useForm } from "react-hook-form";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
-interface Props {
+interface AddColumnDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (title: string) => void;
+  onSave: (params: { title: string }) => void;
   initialTitle?: string;
 }
 
-export const AddColumnDialog = ({ open, onClose, onSave, initialTitle = "" }: Props) => {
-  const [title, setTitle] = useState("");
-  const [error, setError] = useState("");
+interface ColumnFormData {
+  title: string;
+}
 
-  const handleSave = () => {
-    if (!title.trim()) {
-      setError("Title cannot be empty or whitespace");
-      return;
-    }
+export const AddColumnDialog = ({
+  open,
+  onClose,
+  onSave,
+  initialTitle = "",
+}: AddColumnDialogProps) => {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ColumnFormData>({
+    defaultValues: {
+      title: initialTitle,
+    },
+  });
 
-    onSave(title.trim());
-    setTitle("");
-    setError("");
+  const onSubmit = (data: ColumnFormData) => {
+    onSave({ title: data.title.trim() });
+    reset();
     onClose();
   };
 
-  useEffect(() => {
-    if (open) {
-      setTitle(initialTitle);
-      setError("");
-    }
-  }, [open, initialTitle]);
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="rounded-none p-6">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>{initialTitle ? "Edit Column" : "Add Column"}</DialogTitle>
+          <DialogTitle>Add Column</DialogTitle>
         </DialogHeader>
-
-        <div className="flex flex-col gap-4 mt-4">
-          <label className="text-sm font-medium">Title</label>
-          <input
-            placeholder="Eg, In review"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              if (error) setError("");
-            }}
-            className="border rounded px-3 py-2"
-          />
-          {error && <p className="text-sm text-red-500">{error}</p>}
-
-          <div className="flex justify-end">
-            <Button onClick={handleSave}>Save</Button>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              {...register("title", {
+                required: "Title is required",
+                validate: (value) =>
+                  value.trim() !== "" || "Title cannot be empty or whitespace",
+              })}
+            />
+            {errors.title && (
+              <p className="text-sm text-red-500">{errors.title.message}</p>
+            )}
           </div>
-        </div>
+          <div className="flex justify-end">
+            <Button type="submit">Save</Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

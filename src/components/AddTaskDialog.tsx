@@ -13,12 +13,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 interface AddTaskDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave?: (title: string, description: string, file: File | null) => void;
-  isView?: boolean;
+  onSave: (params: { title: string; description: string; file: File | null }) => void;
   task?: {
     title: string;
     description: string;
@@ -26,134 +26,139 @@ interface AddTaskDialogProps {
     fileName?: string;
   } | null;
   isEdit?: boolean;
+  isView?: boolean;
 }
 
-export function AddTaskDialog({
+interface TaskFormData {
+  title: string;
+  description: string;
+  file: FileList | null;
+}
+
+export const AddTaskDialog = ({
   open,
   onClose,
   onSave,
-  isView = false,
   task,
-}: AddTaskDialogProps) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [error, setError] = useState("");
+  isEdit = false,
+  isView = false,
+}: AddTaskDialogProps) => {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+    watch,
+  } = useForm<TaskFormData>({
+    defaultValues: {
+      title: task?.title || "",
+      description: task?.description || "",
+    },
+  });
 
-  useEffect(() => {
-    if (task) {
-      setTitle(task.title);
-      setDescription(task.description);
-    } else {
-      setTitle("");
-      setDescription("");
-    }
-    setError("");
-  }, [task, open]);
+  const file = watch("file");
 
-  const handleSubmit = () => {
-    if (!title.trim()) {
-      setError("Title cannot be empty or whitespace.");
-      return;
-    }
-    if (!description.trim()) {
-      setError("Description cannot be empty or whitespace.");
-      return;
-    }
-    if (!file && !task?.attachmentUrl) {
-      setError("Please upload an attachment.");
-      return;
-    }
-
-    if (onSave) {
-      onSave(title.trim(), description.trim(), file);
-      setTitle("");
-      setDescription("");
-      setFile(null);
-      setError("");
-    }
+  const onSubmit = (data: TaskFormData) => {
+    onSave({
+      title: data.title.trim(),
+      description: data.description.trim(),
+      file: data.file?.[0] || null,
+    });
+    reset();
+    onClose();
   };
 
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-[600px] p-6">
-        <div className="flex justify-between items-center border-b pb-2">
-          <DialogTitle>Task</DialogTitle>
-          <DialogClose asChild>
-            <Button variant="ghost" size="icon" />
-          </DialogClose>
-        </div>
-
-        <div className="space-y-4 pt-4">
-          <div>
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              placeholder="Eg, In review"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                if (error) setError("");
-              }}
-              disabled={isView}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Write description here..."
-              value={description}
-              onChange={(e) => {
-                setDescription(e.target.value);
-                if (error) setError("");
-              }}
-              disabled={isView}
-              rows={4}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="file">Attachments</Label>
-            {isView ? (
-              task?.attachmentUrl ? (
-                <div className="space-y-1">
-                  <p className="text-sm text-gray-700">
-                    File: {task.fileName ?? "Unknown file"}
-                  </p>
+  if (isView && task) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>View Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Title</Label>
+              <p className="mt-1">{task.title}</p>
+            </div>
+            <div>
+              <Label>Description</Label>
+              <p className="mt-1">{task.description}</p>
+            </div>
+            {task.attachmentUrl && (
+              <div>
+                <Label>Attachment</Label>
+                <p className="mt-1">
                   <a
                     href={task.attachmentUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 underline text-sm"
+                    className="text-blue-500 hover:underline"
                   >
-                    View Attachment
+                    {task.fileName || "View Attachment"}
                   </a>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">No attachment</p>
-              )
-            ) : (
-              <Input
-                id="file"
-                type="file"
-                onChange={(e) => {
-                  setFile(e.target.files?.[0] ?? null);
-                  if (error) setError("");
-                }}
-                disabled={isView}
-              />
+                </p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isEdit ? "Edit Task" : "Add Task"}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              {...register("title", {
+                required: "Title is required",
+                validate: (value) =>
+                  value.trim() !== "" || "Title cannot be empty or whitespace",
+              })}
+            />
+            {errors.title && (
+              <p className="text-sm text-red-500">{errors.title.message}</p>
             )}
           </div>
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              {...register("description", {
+                required: "Description is required",
+                validate: (value) =>
+                  value.trim() !== "" || "Description cannot be empty or whitespace",
+              })}
+            />
+            {errors.description && (
+              <p className="text-sm text-red-500">{errors.description.message}</p>
+            )}
+          </div>
 
-        <DialogFooter className="pt-4">
-          {!isView && <Button onClick={handleSubmit}>Save</Button>}
-        </DialogFooter>
+          <div className="space-y-2">
+            <Label htmlFor="file">Attachment</Label>
+            <Input
+              id="file"
+              type="file"
+              {...register("file")}
+            />
+            {file?.[0] && (
+              <p className="text-sm text-gray-500">{file[0].name}</p>
+            )}
+          </div>
+
+          <div className="flex justify-end">
+            <Button type="submit">{isEdit ? "Update" : "Save"}</Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
-}
+};

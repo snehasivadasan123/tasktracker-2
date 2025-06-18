@@ -12,17 +12,22 @@ import { Button } from "./ui/button";
 import { ArrowRight, Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-interface Props {
-  workspaceDatas: Iworkspace[];
-  onAddWorkspace?: () => void
-  onEditWorkspace?: (workspace: Iworkspace) => void
-  onDeleteWorkspace?: (id: number) => void
-  onDownloadWorkspace?: (workspace: Iworkspace) => void;
-  onViewWorkspace?: (workspace: Iworkspace) => void; // ✅ ADD THIS
 
+interface WorkspaceOverviewProps {
+  workspaceDatas: Iworkspace[];
+  onAddWorkspace: () => void;
+  onEditWorkspace: (params: { workspace: Iworkspace }) => void;
+  onDeleteWorkspace: (params: { id: number }) => void;
+  onDownloadWorkspace: (params: { workspace: Iworkspace }) => void;
 }
 
-const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace, onEditWorkspace, onDeleteWorkspace, onDownloadWorkspace }: Props) => {
+const WorkspaceOverview = ({
+  workspaceDatas,
+  onAddWorkspace,
+  onEditWorkspace,
+  onDeleteWorkspace,
+  onDownloadWorkspace,
+}: WorkspaceOverviewProps) => {
   console.log("the datas are???????????", workspaceDatas)
   const router = useRouter()
   // const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -39,16 +44,16 @@ const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace, onEditWorkspace, on
             <div className="text-lg font-semibold mb-8 ">{ws.title}</div>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2"
-                onClick={() => onEditWorkspace?.(ws)}
+                onClick={() => onEditWorkspace({ workspace: ws })}
               >
                 <Pencil className="w-5 h-5 " />
               </Button>
               <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2"
-                onClick={() => onDeleteWorkspace?.(ws.id)} >
+                onClick={() => onDeleteWorkspace({ id: ws.id })} >
                 <Trash2 className="w-5 h-5" />
               </Button>
               <Button variant="ghost" size="icon" className="bg-gray-200 rounded-none p-2"
-                onClick={() => onDownloadWorkspace?.(ws)}
+                onClick={() => onDownloadWorkspace({ workspace: ws })}
               >
                 <Download className="w-5 h-5" />
               </Button>

@@ -17,12 +17,14 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@tiptap/react": "^2.14.0",
     "@tiptap/starter-kit": "^2.14.0",
+    "axios": "^1.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.515.0",
     "next": "15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hook-form": "^7.58.1",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {

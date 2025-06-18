@@ -4,36 +4,40 @@ import React, { useEffect, useState } from 'react'
 import WorkspaceOverview from '@/components/WorkspaceOverview'
 import { Iworkspace } from "@/types"
 import WorkspaceDialog from '@/components/WorkspaceDialog'
+import axios from 'axios'
 // import { workspaceData } from '@/data/workspaceData'
+
+interface WorkspaceDialogData {
+  title: string;
+}
+
+interface DeleteWorkspaceParams {
+  id: number;
+}
+
+interface DownloadWorkspaceParams {
+  workspace: Iworkspace;
+}
 
 const page = () => {
   const [open, setOpen] = React.useState(false);
   const [workspaces, setWorkspaces] = React.useState<Iworkspace[]>([]);
-  // [
-  //   { id: 1, title: "Project management", date: "Mon May 02 2022" },
-  //   { id: 2, title: "Digital marketing course timeline", date: "Mon May 02 2022" },
-  //   { id: 3, title: "Business planning", date: "Mon May 02 2022" },]
-
-
-  // )
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [workspaceToEdit, setWorkspaceToEdit] = useState<Iworkspace | null>(null)
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true)
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
-        const res = await fetch("http://localhost:3001/workspaces")
-        const data = await res.json()
+        const { data } = await axios.get(`${API_URL}/workspaces`)
         setWorkspaces(data)
-        console.log("the datassssssss", res)
+        console.log("the datassssssss", data)
       } catch (error) {
         console.error("Failed to fetch workspaces", error);
-
-      }
-      finally {
+      } finally {
         setLoading(false)
       }
     }
@@ -43,47 +47,35 @@ const page = () => {
   const handleAddWorkspace = () => {
     setOpen(true);
   }
-  const handleEditWorkspace = (workspace: Iworkspace) => {
+  const handleEditWorkspace = ({ workspace }: { workspace: Iworkspace }) => {
     setWorkspaceToEdit(workspace)
     setOpen(true)
   }
-  const handleDeleteWorkspace = async (id: number) => {
+  const handleDeleteWorkspace = async ({ id }: DeleteWorkspaceParams) => {
     try {
-      const res = await fetch(`http://localhost:3001/workspaces/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) throw new Error("Failed to delete workspace");
-
+      await axios.delete(`${API_URL}/workspaces/${id}`);
       setWorkspaces((prev) => prev.filter(ws => ws.id !== id));
     } catch (error) {
       console.error("Error deleting workspace:", error);
     }
   };
 
-  const handleDownloadWorkspace = async (workspace: Iworkspace) => {
+  const handleDownloadWorkspace = async ({ workspace }: DownloadWorkspaceParams) => {
     const { id } = workspace;
 
     try {
       const [workspacesRes, columnsRes, tasksRes, attachmentsRes] = await Promise.all([
-        fetch(`http://localhost:3001/workspaces?id=${id}`),
-        fetch(`http://localhost:3001/columns?workspaces_id=${id}`),
-        fetch(`http://localhost:3001/tasks?workspaces_id=${id}`),
-        fetch(`http://localhost:3001/attachments?workspaces_id=${id}`),
-      ]);
-
-      const [workspaces, columns, tasks, attachments] = await Promise.all([
-        workspacesRes.json(),
-        columnsRes.json(),
-        tasksRes.json(),
-        attachmentsRes.json(),
+        axios.get(`${API_URL}/workspaces?id=${id}`),
+        axios.get(`${API_URL}/columns?workspaces_id=${id}`),
+        axios.get(`${API_URL}/tasks?workspaces_id=${id}`),
+        axios.get(`${API_URL}/attachments?workspaces_id=${id}`),
       ]);
 
       const filteredData = {
-        workspaces,
-        columns,
-        tasks,
-        attachments,
+        workspaces: workspacesRes.data,
+        columns: columnsRes.data,
+        tasks: tasksRes.data,
+        attachments: attachmentsRes.data,
       };
 
       const blob = new Blob([JSON.stringify(filteredData, null, 2)], {
@@ -119,8 +111,6 @@ const page = () => {
         onEditWorkspace={handleEditWorkspace}
         onDeleteWorkspace={handleDeleteWorkspace}
         onDownloadWorkspace={handleDownloadWorkspace}
-
-
       />
       <WorkspaceDialog
         open={open}
@@ -129,7 +119,7 @@ const page = () => {
           if (!state) setWorkspaceToEdit(null);
         }}
         initialData={workspaceToEdit}
-        onSave={async (data) => {
+        onSave={async (data: WorkspaceDialogData) => {
           if (workspaceToEdit) {
             const updatedWorkspace = {
               ...workspaceToEdit,
@@ -138,15 +128,10 @@ const page = () => {
             };
 
             try {
-              const res = await fetch(`http://localhost:3001/workspaces/${workspaceToEdit.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updatedWorkspace),
-              });
-
-              if (!res.ok) throw new Error("Failed to update workspace");
-
-              const saved = await res.json();
+              const { data: saved } = await axios.put(
+                `${API_URL}/workspaces/${workspaceToEdit.id}`,
+                updatedWorkspace
+              );
 
               setWorkspaces((prev) =>
                 prev.map((ws) => (ws.id === saved.id ? saved : ws))
@@ -154,11 +139,7 @@ const page = () => {
             } catch (err) {
               console.error("Failed to update workspace", err);
             }
-          }
-
-
-
-          else {
+          } else {
             const maxId = workspaces.reduce((max, ws) => {
               const numericId = typeof ws.id === "number" ? ws.id : parseInt(ws.id);
               return isNaN(numericId) ? max : Math.max(max, numericId);
@@ -172,15 +153,10 @@ const page = () => {
             };
 
             try {
-              const res = await fetch("http://localhost:3001/workspaces", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newWorkspace),
-              });
-
-              if (!res.ok) throw new Error("Failed to save workspace");
-
-              const savedWorkspace = await res.json();
+              const { data: savedWorkspace } = await axios.post(
+                `${API_URL}/workspaces`,
+                newWorkspace
+              );
               setWorkspaces((prev) => [...prev, savedWorkspace]);
             } catch (err) {
               console.error("Failed to add workspace", err);
@@ -190,11 +166,9 @@ const page = () => {
           setOpen(false);
           setWorkspaceToEdit(null);
         }}
-
       />
     </main>
   )
-
 }
 
 export default page;

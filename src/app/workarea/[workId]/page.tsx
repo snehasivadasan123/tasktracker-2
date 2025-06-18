@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { AddColumnDialog } from "@/components/AddColumnDialog";
 import { AddTaskDialog } from "@/components/AddTaskDialog"
 import { notFound } from "next/navigation";
+import axios from 'axios';
 
 import {
   DndContext,
@@ -27,6 +28,8 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 function SortableColumn({ id, children }: { id: string | number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
@@ -57,6 +60,16 @@ function SortableTask({ id, children }: { id: string | number; children: React.R
   );
 }
 
+interface AddColumnParams {
+  title: string;
+}
+
+interface AddTaskParams {
+  title: string;
+  description: string;
+  file: File | null;
+}
+
 const WorkAreapage = () => {
   const params = useParams();
   const worksid = Number(params.workId);
@@ -64,36 +77,27 @@ const WorkAreapage = () => {
   const [columns, setColumns] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true)
-  console.log("the task iss???????", tasks)
-  console.log("the columns iss???????", columns)
   const sensors = useSensors(useSensor(PointerSensor));
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const wsRes = await fetch(`http://localhost:3001/workspaces/${worksid}`)
-        console.log("the********************", wsRes)
-        if (!wsRes.ok) {
-          console.log(`Workspace with ID ${worksid} not found.`);
-          notFound()
-          return;
-        }
-
-
-        const workspaceData = await wsRes.json();
-
+        const { data: workspaceData } = await axios.get(`${API_URL}/workspaces/${worksid}`);
+        
         const [colRes, taskRes] = await Promise.all([
-          fetch(`http://localhost:3001/columns?workspaces_id=${worksid}`),
-          fetch(`http://localhost:3001/tasks?workspaces_id=${worksid}`),
+          axios.get(`${API_URL}/columns?workspaces_id=${worksid}`),
+          axios.get(`${API_URL}/tasks?workspaces_id=${worksid}`),
         ]);
-        console.log("<<<<<<<<<<<<<<<<<<<<<<<<", taskRes)
-        const columns = colRes.ok ? await colRes.json() : [];
-        const tasks = taskRes.ok ? await taskRes.json() : [];
+
+        // Sort columns and tasks by 'order' field
+        const sortedColumns = colRes.data.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+        const sortedTasks = taskRes.data.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
 
         setWorkspace(workspaceData);
-        setColumns(columns);
-        setTasks(tasks);
+        setColumns(sortedColumns);
+        setTasks(sortedTasks);
       } catch (error) {
         console.error("Failed to fetch workspace data", error);
+        notFound();
       } finally {
         setLoading(false);
       }
@@ -129,31 +133,25 @@ const WorkAreapage = () => {
     title,
     created_at: Date.now(),
   });
-  async function handleAddColumn(title: string): Promise<void> {
+  async function handleAddColumn({ title }: AddColumnParams): Promise<void> {
     if (editingColumn) {
-      console.log("yessss")
       const updatedCols = columns.map((col) =>
         col.id === editingColumn.id ? { ...col, title } : col
       );
       setColumns(updatedCols);
 
       try {
-        console.log("editing coloumn____________")
-        await fetch(`http://localhost:3001/columns/${editingColumn.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title }),
-        });
+        await axios.patch(`${API_URL}/columns/${editingColumn.id}`, { title });
       } catch (err) {
         console.error("Failed to update column:", err);
       }
     } else {
-      const allColumnsRes = await fetch("http://localhost:3001/columns");
-      const allColumns = allColumnsRes.ok ? await allColumnsRes.json() : [];
+      const { data: allColumns } = await axios.get(`${API_URL}/columns`);
       const maxColumnId = allColumns.reduce((max: number, col: { id: string; }) => {
         const numericId = parseInt(col.id);
         return isNaN(numericId) ? max : Math.max(max, numericId);
       }, 0);
+      
       const newCol = {
         id: String(maxColumnId + 1),
         title,
@@ -163,17 +161,7 @@ const WorkAreapage = () => {
       };
 
       try {
-        const response = await fetch("http://localhost:3001/columns", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newCol),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to add column");
-        }
-
-        const savedCol = await response.json();
+        const { data: savedCol } = await axios.post(`${API_URL}/columns`, newCol);
         setColumns([...columns, savedCol]);
       } catch (err) {
         console.error("Error adding column:", err);
@@ -184,26 +172,17 @@ const WorkAreapage = () => {
     setEditingColumn(null);
   }
 
-  async function handleDeleteColumn(colId: number) {
+  async function handleDeleteColumn({ colId }: { colId: number }) {
     try {
-
-      const colRes = await fetch(`http://localhost:3001/columns/${colId}`, {
-        method: "DELETE",
-      });
-
-      if (!colRes.ok) throw new Error("Failed to delete column");
-
-
+      await axios.delete(`${API_URL}/columns/${colId}`);
+      
       const relatedTasks = tasks.filter((task) => Number(task.columns_id) === Number(colId));
 
       await Promise.all(
         relatedTasks.map((task) =>
-          fetch(`http://localhost:3001/tasks/${task.id}`, {
-            method: "DELETE",
-          })
+          axios.delete(`${API_URL}/tasks/${task.id}`)
         )
       );
-
 
       setColumns(columns.filter((col) => col.id !== colId));
       setTasks(tasks.filter((task) => task.columns_id !== colId));
@@ -212,8 +191,7 @@ const WorkAreapage = () => {
     }
   }
 
-
-  async function handleAddTask(title: string, description: string, file: File | null) {
+  async function handleAddTask({ title, description, file }: AddTaskParams) {
     if (taskColumnId !== null) {
       if (editingTask) {
         const updatedTasks = tasks.map((t) =>
@@ -230,27 +208,18 @@ const WorkAreapage = () => {
         setTasks(updatedTasks);
 
         try {
-          await fetch(`http://localhost:3001/tasks/${editingTask.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title,
-              description,
-              attachmentUrl: file ? URL.createObjectURL(file) : editingTask.attachmentUrl,
-              fileName: file ? file.name : editingTask.fileName,
-            }),
+          await axios.patch(`${API_URL}/tasks/${editingTask.id}`, {
+            title,
+            description,
+            attachmentUrl: file ? URL.createObjectURL(file) : editingTask.attachmentUrl,
+            fileName: file ? file.name : editingTask.fileName,
           });
         } catch (err) {
           console.error("Failed to update task:", err);
         }
 
         setEditingTask(null);
-      }
-
-
-
-
-      else {
+      } else {
         const newTask = {
           columns_id: taskColumnId,
           title,
@@ -262,17 +231,7 @@ const WorkAreapage = () => {
         };
 
         try {
-          const response = await fetch("http://localhost:3001/tasks", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(newTask),
-          });
-
-          if (!response.ok) {
-            throw new Error("Failed to add task");
-          }
-
-          const savedTask = await response.json();
+          const { data: savedTask } = await axios.post(`${API_URL}/tasks`, newTask);
           setTasks([...tasks, savedTask]);
         } catch (err) {
           console.error("Error adding task:", err);
@@ -284,17 +243,9 @@ const WorkAreapage = () => {
     }
   }
 
-
-  async function handleDeleteTask(taskId: number) {
+  async function handleDeleteTask({ taskId }: { taskId: number }) {
     try {
-      const res = await fetch(`http://localhost:3001/tasks/${taskId}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to delete task");
-      }
-
+      await axios.delete(`${API_URL}/tasks/${taskId}`);
       setTasks(tasks.filter((task) => task.id !== taskId));
     } catch (err) {
       console.error("Failed to delete task:", err);
@@ -310,7 +261,12 @@ const WorkAreapage = () => {
       const oldIndex = columns.findIndex(col => col.id === active.id);
       const newIndex = columns.findIndex(col => col.id === over.id);
       if (oldIndex !== newIndex) {
-        setColumns(arrayMove(columns, oldIndex, newIndex));
+        const newColumns = arrayMove(columns, oldIndex, newIndex);
+        setColumns(newColumns);
+        // Persist new order to backend
+        newColumns.forEach((col, idx) => {
+          axios.patch(`${API_URL}/columns/${col.id}`, { order: idx });
+        });
       }
       return;
     }
@@ -339,6 +295,10 @@ const WorkAreapage = () => {
           return t;
         });
         setTasks(newTasks);
+        // Persist new order to backend
+        reordered.forEach((task, idx) => {
+          axios.patch(`${API_URL}/tasks/${task.id}`, { order: idx });
+        });
       } else {
         // b) Different column: move to new column, place after the task it was dropped on
         const newTasks = tasks.map(t =>
@@ -364,14 +324,24 @@ const WorkAreapage = () => {
           return t;
         });
         setTasks(finalTasks);
+        // Persist new order to backend for destination column
+        filtered.forEach((task, idx) => {
+          axios.patch(`${API_URL}/tasks/${task.id}`, { order: idx });
+        });
       }
     } else if (activeTask && !overTask) {
       // Dropped on empty column area: move to end of that column
       const columnId = columns.find(col => col.id === over.id)?.id;
       if (columnId) {
-        setTasks(tasks.map(t =>
+        const updatedTasks = tasks.map(t =>
           t.id === active.id ? { ...t, columns_id: columnId } : t
-        ));
+        );
+        setTasks(updatedTasks);
+        // Persist column change to backend
+        const movedTask = updatedTasks.find(t => t.id === active.id);
+        if (movedTask) {
+          axios.patch(`${API_URL}/tasks/${movedTask.id}`, { columns_id: columnId });
+        }
       }
     }
   }
@@ -414,7 +384,6 @@ const WorkAreapage = () => {
               const columnTasks = tasks.filter(
                 (task) => Number(task.columns_id) === Number(col.id)
               );
-              console.log("the columntask issssssss=============>>>>///", columnTasks)
 
 
               return (
@@ -439,7 +408,7 @@ const WorkAreapage = () => {
                           variant="ghost"
                           size="icon"
                           onPointerDown={(e) => e.stopPropagation()}
-                          onClick={() => handleDeleteColumn(col.id)}
+                          onClick={() => handleDeleteColumn({ colId: col.id })}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -486,7 +455,7 @@ const WorkAreapage = () => {
                                 </Button>
                                 <Button variant="ghost" size="icon"
                                   onPointerDown={(e) => e.stopPropagation()}
-                                  onClick={() => handleDeleteTask(task.id)}>
+                                  onClick={() => handleDeleteTask({ taskId: task.id })}>
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
                               </div>
@@ -551,10 +520,11 @@ const WorkAreapage = () => {
         onClose={() => {
           setIsViewOpen(false);
           setViewTask(null);
-        }}
+        } }
         task={viewTask}
-        isView={true}
-      />
+        isView={true} onSave={function (params: { title: string; description: string; file: File | null; }): void {
+          throw new Error("Function not implemented.");
+        } }      />
     </div>
   );
 };
