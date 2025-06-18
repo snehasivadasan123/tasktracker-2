@@ -18,6 +18,8 @@ interface Props {
   onEditWorkspace?: (workspace: Iworkspace) => void
   onDeleteWorkspace?: (id: number) => void
   onDownloadWorkspace?: (workspace: Iworkspace) => void;
+  onViewWorkspace?: (workspace: Iworkspace) => void; // ✅ ADD THIS
+
 }
 
 const WorkspaceOverview = ({ workspaceDatas, onAddWorkspace, onEditWorkspace, onDeleteWorkspace, onDownloadWorkspace }: Props) => {
