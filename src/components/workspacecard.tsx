@@ -1,4 +1,3 @@
-// components/WorkspaceCard.tsx
 
 import { Pencil, Trash2, Eye, Download } from "lucide-react"
 
@@ -23,7 +22,6 @@ export default function WorkspaceCard({
     <div className="bg-white rounded-xl border p-4 shadow-md hover:shadow-lg transition-all w-[250px]">
       <h2 className="text-lg font-semibold mb-1">{name}</h2>
       <p className="text-sm text-gray-500 mb-3">Created on: {date}</p>
-
       <div className="flex justify-between items-center text-gray-600">
         <button onClick={onEdit}>
           <Pencil className="w-4 h-4" />

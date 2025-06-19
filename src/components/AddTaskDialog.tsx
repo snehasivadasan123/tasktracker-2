@@ -1,10 +1,7 @@
-"use client";
-
+"use client"
 import {
   Dialog,
-  DialogClose,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -55,6 +52,14 @@ export const AddTaskDialog = ({
       description: task?.description || "",
     },
   });
+  useEffect(() => {
+    if (open) {
+      reset({
+        title: task?.title || "",
+        description: task?.description || "",
+      });
+    }
+  }, [open, task, reset]);
 
   const file = watch("file");
 
@@ -131,28 +136,37 @@ export const AddTaskDialog = ({
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              {...register("description", {
-                required: "Description is required",
-                validate: (value) =>
-                  value.trim() !== "" || "Description cannot be empty or whitespace",
-              })}
+              {...register("description")}
+
             />
-            {errors.description && (
-              <p className="text-sm text-red-500">{errors.description.message}</p>
-            )}
+
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="file">Attachment</Label>
-            <Input
-              id="file"
-              type="file"
-              {...register("file")}
-            />
+            <Input id="file" type="file" {...register("file")} />
+
+
             {file?.[0] && (
-              <p className="text-sm text-gray-500">{file[0].name}</p>
+              <p className="text-sm text-gray-500">Selected: {file[0].name}</p>
+            )}
+
+
+            {!file?.[0] && task?.attachmentUrl && (
+              <p className="text-sm text-blue-500">
+                Existing:{" "}
+                <a
+                  href={task.attachmentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  {task.fileName || "View Attachment"}
+                </a>
+              </p>
             )}
           </div>
+
 
           <div className="flex justify-end">
             <Button type="submit">{isEdit ? "Update" : "Save"}</Button>

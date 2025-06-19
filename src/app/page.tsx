@@ -1,11 +1,11 @@
 "use client"
 
 import React, { useEffect, useState } from 'react'
-import WorkspaceOverview from '@/components/WorkspaceOverview'
+import WorkspaceOverview, { Header } from '@/components/WorkspaceOverview'
 import { Iworkspace } from "@/types"
 import WorkspaceDialog from '@/components/WorkspaceDialog'
 import axios from 'axios'
-// import { workspaceData } from '@/data/workspaceData'
+import { PageContainer } from '@/components/PageContainer'
 
 interface WorkspaceDialogData {
   title: string;
@@ -22,7 +22,6 @@ interface DownloadWorkspaceParams {
 const page = () => {
   const [open, setOpen] = React.useState(false);
   const [workspaces, setWorkspaces] = React.useState<Iworkspace[]>([]);
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [workspaceToEdit, setWorkspaceToEdit] = useState<Iworkspace | null>(null)
   const [loading, setLoading] = useState(true)
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -34,7 +33,6 @@ const page = () => {
 
         const { data } = await axios.get(`${API_URL}/workspaces`)
         setWorkspaces(data)
-        console.log("the datassssssss", data)
       } catch (error) {
         console.error("Failed to fetch workspaces", error);
       } finally {
@@ -103,70 +101,72 @@ const page = () => {
     );
   }
   return (
-    <main className='p-8'>
-      <h1 className="text-lg font-medium flex items-center space-x-4 ml-30 p-5">Workspace</h1>
-      <WorkspaceOverview
-        workspaceDatas={workspaces}
-        onAddWorkspace={handleAddWorkspace}
-        onEditWorkspace={handleEditWorkspace}
-        onDeleteWorkspace={handleDeleteWorkspace}
-        onDownloadWorkspace={handleDownloadWorkspace}
-      />
-      <WorkspaceDialog
-        open={open}
-        onOpenChange={(state) => {
-          setOpen(state);
-          if (!state) setWorkspaceToEdit(null);
-        }}
-        initialData={workspaceToEdit}
-        onSave={async (data: WorkspaceDialogData) => {
-          if (workspaceToEdit) {
-            const updatedWorkspace = {
-              ...workspaceToEdit,
-              title: data.title,
-              date: new Date().toDateString(),
-            };
+    <main>
+      <PageContainer>
 
-            try {
-              const { data: saved } = await axios.put(
-                `${API_URL}/workspaces/${workspaceToEdit.id}`,
-                updatedWorkspace
-              );
+        <WorkspaceOverview
+          workspaceDatas={workspaces}
+          onAddWorkspace={handleAddWorkspace}
+          onEditWorkspace={handleEditWorkspace}
+          onDeleteWorkspace={handleDeleteWorkspace}
+          onDownloadWorkspace={handleDownloadWorkspace}
+        />
+        <WorkspaceDialog
+          open={open}
+          onOpenChange={(state) => {
+            setOpen(state);
+            if (!state) setWorkspaceToEdit(null);
+          }}
+          initialData={workspaceToEdit}
+          onSave={async (data: WorkspaceDialogData) => {
+            if (workspaceToEdit) {
+              const updatedWorkspace = {
+                ...workspaceToEdit,
+                title: data.title,
+                date: new Date().toDateString(),
+              };
 
-              setWorkspaces((prev) =>
-                prev.map((ws) => (ws.id === saved.id ? saved : ws))
-              );
-            } catch (err) {
-              console.error("Failed to update workspace", err);
+              try {
+                const { data: saved } = await axios.put(
+                  `${API_URL}/workspaces/${workspaceToEdit.id}`,
+                  updatedWorkspace
+                );
+
+                setWorkspaces((prev) =>
+                  prev.map((ws) => (ws.id === saved.id ? saved : ws))
+                );
+              } catch (err) {
+                console.error("Failed to update workspace", err);
+              }
+            } else {
+              const maxId = workspaces.reduce((max, ws) => {
+                const numericId = typeof ws.id === "number" ? ws.id : parseInt(ws.id);
+                return isNaN(numericId) ? max : Math.max(max, numericId);
+              }, 0);
+
+              const newWorkspace = {
+                id: String(maxId + 1),
+                title: data.title,
+                date: new Date().toDateString(),
+                created_at: Date.now(),
+              };
+
+              try {
+                const { data: savedWorkspace } = await axios.post(
+                  `${API_URL}/workspaces`,
+                  newWorkspace
+                );
+                setWorkspaces((prev) => [...prev, savedWorkspace]);
+              } catch (err) {
+                console.error("Failed to add workspace", err);
+              }
             }
-          } else {
-            const maxId = workspaces.reduce((max, ws) => {
-              const numericId = typeof ws.id === "number" ? ws.id : parseInt(ws.id);
-              return isNaN(numericId) ? max : Math.max(max, numericId);
-            }, 0);
 
-            const newWorkspace = {
-              id: String(maxId + 1),
-              title: data.title,
-              date: new Date().toDateString(),
-              created_at: Date.now(),
-            };
-
-            try {
-              const { data: savedWorkspace } = await axios.post(
-                `${API_URL}/workspaces`,
-                newWorkspace
-              );
-              setWorkspaces((prev) => [...prev, savedWorkspace]);
-            } catch (err) {
-              console.error("Failed to add workspace", err);
-            }
-          }
-
-          setOpen(false);
-          setWorkspaceToEdit(null);
-        }}
-      />
+            setOpen(false);
+            setWorkspaceToEdit(null);
+          }}
+        />
+      </PageContainer>
     </main>
   )
 }

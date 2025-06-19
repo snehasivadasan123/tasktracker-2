@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { useForm } from "react-hook-form";
@@ -27,10 +28,14 @@ export const AddColumnDialog = ({
     reset,
     formState: { errors },
   } = useForm<ColumnFormData>({
-    defaultValues: {
-      title: initialTitle,
-    },
+    defaultValues: { title: "" },
   });
+
+  useEffect(() => {
+    if (open) {
+      reset({ title: initialTitle || "" });
+    }
+  }, [initialTitle, open, reset]);
 
   const onSubmit = (data: ColumnFormData) => {
     onSave({ title: data.title.trim() });
@@ -42,7 +47,7 @@ export const AddColumnDialog = ({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Column</DialogTitle>
+          <DialogTitle>{initialTitle ? "Edit Column" : "Add Column"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">

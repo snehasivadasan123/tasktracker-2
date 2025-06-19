@@ -34,10 +34,12 @@ const Column: React.FC<ColumnProps> = ({
     minWidth: 250,
     marginRight: 16,
   };
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <div className="w-[250px] bg-gray-100 shadow-sm p-2">
-        <div className="flex justify-between items-center mb-2">
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex flex-col gap-4">
+      {/* Column header */}
+      <div className="w-[250px] bg-gray-100 border border-gray-300 p-2 shadow-sm">
+        <div className="flex justify-between items-center">
           <h2 className="font-semibold">{column.title}</h2>
           <div className="flex gap-1">
             <Button variant="ghost" size="icon" onPointerDown={e => e.stopPropagation()} onClick={onEditColumn}>
@@ -48,22 +50,28 @@ const Column: React.FC<ColumnProps> = ({
             </Button>
           </div>
         </div>
-        <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3">
-            {tasks.map(task => (
-              <Task
-                key={task.id}
-                task={task}
-                onView={() => onViewTask(task)}
-                onEdit={() => onEditTask(task)}
-                onDelete={() => onDeleteTask(task)}
-              />
-            ))}
-          </div>
-        </SortableContext>
+      </div>
+
+      {/* Task list */}
+      <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+        <div className="flex flex-col gap-4">
+          {tasks.map(task => (
+            <Task
+              key={task.id}
+              task={task}
+              onView={() => onViewTask(task)}
+              onEdit={() => onEditTask(task)}
+              onDelete={() => onDeleteTask(task)}
+            />
+          ))}
+        </div>
+      </SortableContext>
+
+      {/* Add task button */}
+      <div className="w-[250px]">
         <Button
           variant="outline"
-          className="w-full text-sm mt-6 rounded-none"
+          className="w-full text-sm rounded-none"
           onPointerDown={e => e.stopPropagation()}
           onClick={onAddTask}
         >

@@ -81,7 +81,6 @@ export default function WorkspaceDialog({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Manual Input */}
           {type === "manual" && (
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700">

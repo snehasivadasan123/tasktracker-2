@@ -27,18 +27,26 @@ export default function Page({
 
       <WorkspaceOverview
         workspaceDatas={workspaces}
-        onAddWorkspace={onAddWorkspace}
+        onAddWorkspace={onAddWorkspace ?? (() => { })}
         onViewWorkspace={onViewWorkspace}
-        onEditWorkspace={onEditWorkspace}
+        onEditWorkspace={
+          onEditWorkspace
+            ? ({ workspace }) => onEditWorkspace(workspace)
+            : () => { }
+        }
         onDeleteWorkspace={
           onDeleteWorkspace
-            ? (id: number) => {
+            ? ({ id }) => {
               const ws = workspaces.find(w => w.id === id);
               if (ws) onDeleteWorkspace(ws);
             }
-            : undefined
-        } onDownloadWorkspace={onDownloadWorkspace}
-      />
+            : () => { }
+        }
+        onDownloadWorkspace={
+          onDownloadWorkspace
+            ? ({ workspace }) => onDownloadWorkspace(workspace)
+            : () => { }
+        } />
     </div>
   );
 } 

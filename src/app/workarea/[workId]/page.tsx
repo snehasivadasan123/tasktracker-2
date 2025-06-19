@@ -2,10 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-//import { workspaceData } from "@/data/workspaceData";
-import { Card, CardContent, } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, ArrowLeft, EyeIcon, MoveIcon } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AddColumnDialog } from "@/components/AddColumnDialog";
 import { AddTaskDialog } from "@/components/AddTaskDialog"
@@ -13,53 +11,16 @@ import { notFound } from "next/navigation";
 import axios from 'axios';
 
 import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
   DragEndEvent
 } from '@dnd-kit/core';
 import {
   arrayMove,
-  SortableContext,
-  horizontalListSortingStrategy,
-  verticalListSortingStrategy,
-  useSortable
+
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import Board from '@/components/WorkArea/Board';
+import { PageContainer } from "@/components/PageContainer";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-function SortableColumn({ id, children }: { id: string | number; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    minWidth: 250,
-    marginRight: 16,
-  };
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      {children}
-    </div>
-  );
-}
-
-function SortableTask({ id, children }: { id: string | number; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    marginBottom: 12,
-  };
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      {children}
-    </div>
-  );
-}
 
 interface AddColumnParams {
   title: string;
@@ -78,12 +39,11 @@ const WorkAreapage = () => {
   const [columns, setColumns] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true)
-  const sensors = useSensors(useSensor(PointerSensor));
   useEffect(() => {
     const fetchData = async () => {
       try {
         const { data: workspaceData } = await axios.get(`${API_URL}/workspaces/${worksid}`);
-        
+
         const [colRes, taskRes] = await Promise.all([
           axios.get(`${API_URL}/columns?workspaces_id=${worksid}`),
           axios.get(`${API_URL}/tasks?workspaces_id=${worksid}`),
@@ -97,8 +57,9 @@ const WorkAreapage = () => {
         setColumns(sortedColumns);
         setTasks(sortedTasks);
       } catch (error) {
-        console.error("Failed to fetch workspace data", error);
-        notFound();
+
+        notFound()
+        return
       } finally {
         setLoading(false);
       }
@@ -152,7 +113,7 @@ const WorkAreapage = () => {
         const numericId = parseInt(col.id);
         return isNaN(numericId) ? max : Math.max(max, numericId);
       }, 0);
-      
+
       const newCol = {
         id: String(maxColumnId + 1),
         title,
@@ -176,7 +137,6 @@ const WorkAreapage = () => {
   async function handleDeleteColumn({ colId }: { colId: number }) {
     try {
       await axios.delete(`${API_URL}/columns/${colId}`);
-      
       const relatedTasks = tasks.filter((task) => Number(task.columns_id) === Number(colId));
 
       await Promise.all(
@@ -277,7 +237,6 @@ const WorkAreapage = () => {
     const overTask = tasks.find(t => t.id === over.id);
 
     if (activeTask && overTask) {
-      // a) Same column: reorder
       if (activeTask.columns_id === overTask.columns_id) {
         const columnTasks = tasks.filter(
           t => t.columns_id === activeTask.columns_id
@@ -301,7 +260,6 @@ const WorkAreapage = () => {
           axios.patch(`${API_URL}/tasks/${task.id}`, { order: idx });
         });
       } else {
-        // b) Different column: move to new column, place after the task it was dropped on
         const newTasks = tasks.map(t =>
           t.id === active.id ? { ...t, columns_id: overTask.columns_id } : t
         );
@@ -360,56 +318,57 @@ const WorkAreapage = () => {
   }
 
   return (
-    <div className="p-6 ml-20">
-      <div className="flex items-center mb-6">
-        <Button variant="ghost" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-xl font-semibold ml-2">{workspace?.title}</h1>
+
+    <PageContainer>
+      <div className="py-12 ">
+        <div className="flex items-center gap-10 mb-6">
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-xl font-semibold ">{workspace?.title}</h1>
+        </div>
+        <Board
+          columns={columns}
+          tasks={tasks}
+          onEditColumn={(col) => { setEditingColumn({ id: col.id, title: col.title }); setDialogOpen(true); }}
+          onDeleteColumn={(col) => handleDeleteColumn({ colId: col.id })}
+          onAddTask={(col) => { setTaskColumnId(col.id); setTaskDialogOpen(true); }}
+          onViewTask={(task) => { setViewTask({ title: task.title, description: task.description, attachmentUrl: task.attachmentUrl, fileName: task.fileName }); setIsViewOpen(true); }}
+          onEditTask={(task) => { setEditingTask(task); setTaskColumnId(task.columns_id); setTaskDialogOpen(true); }}
+          onDeleteTask={(task) => handleDeleteTask({ taskId: task.id })}
+          onDragEnd={handleDragEnd}
+          onAddColumn={() => setDialogOpen(true)}
+        />
+        <AddColumnDialog
+          open={dialogOpen}
+          onClose={() => {
+            setDialogOpen(false);
+            setEditingColumn(null);
+          }}
+          onSave={handleAddColumn}
+          initialTitle={editingColumn?.title}
+        />
+        <AddTaskDialog
+          open={taskDialogOpen || isViewOpen}
+          onClose={() => {
+            if (taskDialogOpen) {
+              setTaskDialogOpen(false);
+              setTaskColumnId(null);
+              setEditingTask(null);
+            }
+            if (isViewOpen) {
+              setIsViewOpen(false);
+              setViewTask(null);
+            }
+          }}
+          onSave={taskDialogOpen ? handleAddTask : () => { }}
+          task={taskDialogOpen ? editingTask : viewTask}
+          isEdit={taskDialogOpen && !!editingTask}
+          isView={isViewOpen}
+        />
       </div>
-      <Board
-        columns={columns}
-        tasks={tasks}
-        onEditColumn={(col) => { setEditingColumn({ id: col.id, title: col.title }); setDialogOpen(true); }}
-        onDeleteColumn={(col) => handleDeleteColumn({ colId: col.id })}
-        onAddTask={(col) => { setTaskColumnId(col.id); setTaskDialogOpen(true); }}
-        onViewTask={(task) => { setViewTask({ title: task.title, description: task.description, attachmentUrl: task.attachmentUrl, fileName: task.fileName }); setIsViewOpen(true); }}
-        onEditTask={(task) => { setEditingTask(task); setTaskColumnId(task.columns_id); setTaskDialogOpen(true); }}
-        onDeleteTask={(task) => handleDeleteTask({ taskId: task.id })}
-        onDragEnd={handleDragEnd}
-        onAddColumn={() => setDialogOpen(true)}
-      />
-      <AddColumnDialog
-        open={dialogOpen}
-        onClose={() => {
-          setDialogOpen(false);
-          setEditingColumn(null);
-        }}
-        onSave={handleAddColumn}
-        initialTitle={editingColumn?.title}
-      />
-      <AddTaskDialog
-        open={taskDialogOpen}
-        onClose={() => {
-          setTaskDialogOpen(false)
-          setTaskColumnId(null)
-          setEditingTask(null)
-        }}
-        onSave={handleAddTask}
-        task={editingTask}
-        isEdit={!!editingTask}
-      />
-      <AddTaskDialog
-        open={isViewOpen}
-        onClose={() => {
-          setIsViewOpen(false);
-          setViewTask(null);
-        } }
-        task={viewTask}
-        isView={true} onSave={function (params: { title: string; description: string; file: File | null; }): void {
-          throw new Error("Function not implemented.");
-        } }      />
-    </div>
+    </PageContainer>
+
   );
 };
 

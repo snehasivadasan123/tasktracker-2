@@ -1,6 +1,7 @@
 import React from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { Plus } from 'lucide-react';
 import Column from './Column';
 
 interface BoardProps {
@@ -29,40 +30,52 @@ const Board: React.FC<BoardProps> = ({
   onAddColumn,
 }) => {
   const sensors = useSensors(useSensor(PointerSensor));
+
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={onDragEnd}
-    >
-      <SortableContext
-        items={columns.map(col => col.id)}
-        strategy={horizontalListSortingStrategy}
-      >
-        <div className="flex items-start gap-4 overflow-x-auto">
-          {columns.map((col) => (
-            <Column
-              key={col.id}
-              column={col}
-              tasks={tasks.filter((task) => Number(task.columns_id) === Number(col.id))}
-              onEditColumn={() => onEditColumn(col)}
-              onDeleteColumn={() => onDeleteColumn(col)}
-              onAddTask={() => onAddTask(col)}
-              onViewTask={onViewTask}
-              onEditTask={onEditTask}
-              onDeleteTask={onDeleteTask}
-            />
-          ))}
-          <div
-            className="w-[250px] h-[60px] flex items-center justify-center bg-white border border-dashed border-gray-300 cursor-pointer"
-            onClick={onAddColumn}
+    <main className="p-6">
+      <div className="max-w-none">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+        >
+          <SortableContext
+            items={columns.map(col => col.id)}
+            strategy={horizontalListSortingStrategy}
           >
-            <span className="text-gray-700 font-medium">+ Add column</span>
-          </div>
-        </div>
-      </SortableContext>
-    </DndContext>
+            <div className="flex gap-6 overflow-x-auto pb-4">
+              {columns.map((col) => (
+                <Column
+                  key={col.id}
+                  column={col}
+                  tasks={tasks.filter((task) => Number(task.columns_id) === Number(col.id))}
+                  onEditColumn={() => onEditColumn(col)}
+                  onDeleteColumn={() => onDeleteColumn(col)}
+                  onAddTask={() => onAddTask(col)}
+                  onViewTask={onViewTask}
+                  onEditTask={onEditTask}
+                  onDeleteTask={onDeleteTask}
+                />
+              ))}
+
+              {/* Add Column Button */}
+              <div className="flex-shrink-0 w-60">
+                <div
+                  className="border border-gray-300 border-dashed p-4 bg-white hover:bg-gray-50 transition-colors h-16 flex items-center justify-center cursor-pointer"
+                  onClick={onAddColumn}
+                >
+                  <button className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-2 transition-colors">
+                    <Plus className="w-4 h-4" />
+                    Add column
+                  </button>
+                </div>
+              </div>
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
+    </main>
   );
 };
 
-export default Board; 
+export default Board;
