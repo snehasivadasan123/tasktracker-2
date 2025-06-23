@@ -5,6 +5,7 @@ import Task from './Task';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ColumnProps {
   column: any;
@@ -42,12 +43,24 @@ const Column: React.FC<ColumnProps> = ({
         <div className="flex justify-between items-center">
           <h2 className="font-semibold">{column.title}</h2>
           <div className="flex gap-1">
-            <Button variant="ghost" size="icon" onPointerDown={e => e.stopPropagation()} onClick={onEditColumn}>
-              <Pencil className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onPointerDown={e => e.stopPropagation()} onClick={onDeleteColumn}>
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+
+                <Button variant="ghost" size="icon" onPointerDown={e => e.stopPropagation()} onClick={onEditColumn}>
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Edit</TooltipContent>
+
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onPointerDown={e => e.stopPropagation()} onClick={onDeleteColumn}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Delete</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>

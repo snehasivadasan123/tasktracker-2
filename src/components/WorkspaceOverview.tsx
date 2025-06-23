@@ -2,6 +2,12 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 export function Header() {
   return (
     <header className="w-full bg-gray-100 px-4 py-3 flex justify-between items-center shadow-sm">
@@ -74,38 +80,63 @@ const WorkspaceOverview = ({
                 </div>
                 <div className="flex-1"></div>
                 <div className="flex justify-end gap-2 mb-4">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="bg-gray-200 hover:bg-gray-300 rounded-none w-8 h-8 transition-colors"
-                    onClick={() => onEditWorkspace({ workspace: ws })}
-                  >
-                    <Pencil className="w-4 h-4 text-gray-700" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="bg-gray-200 hover:bg-gray-300 rounded-none w-8 h-8 transition-colors"
-                    onClick={() => onDeleteWorkspace({ id: ws.id })}
-                  >
-                    <Trash2 className="w-4 h-4 text-gray-700" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="bg-gray-200 hover:bg-gray-300 rounded-none w-8 h-8 transition-colors"
-                    onClick={() => onDownloadWorkspace({ workspace: ws })}
-                  >
-                    <Download className="w-4 h-4 text-gray-700" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="bg-gray-200 hover:bg-gray-300 rounded-none w-8 h-8 transition-colors"
-                    onClick={() => router.push(`/workarea/${ws.id}`)}
-                  >
-                    <ArrowRight className="w-4 h-4 text-gray-700" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="bg-gray-200 hover:bg-gray-300 rounded-none w-8 h-8 transition-colors"
+                        onClick={() => onEditWorkspace({ workspace: ws })}
+                      >
+                        <Pencil className="w-4 h-4 text-gray-700" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Edit</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="bg-gray-200 hover:bg-gray-300 rounded-none w-8 h-8 transition-colors"
+                        onClick={() => onDeleteWorkspace({ id: ws.id })}
+                      >
+                        <Trash2 className="w-4 h-4 text-gray-700" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete</TooltipContent>
+
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="bg-gray-200 hover:bg-gray-300 rounded-none w-8 h-8 transition-colors"
+                        onClick={() => onDownloadWorkspace({ workspace: ws })}
+                      >
+                        <Download className="w-4 h-4 text-gray-700" />
+                      </Button>
+
+                    </TooltipTrigger>
+                    <TooltipContent>Download</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="bg-gray-200 hover:bg-gray-300 rounded-none w-8 h-8 transition-colors"
+                        onClick={() => router.push(`/workarea/${ws.id}`)}
+                      >
+                        <ArrowRight className="w-4 h-4 text-gray-700" />
+                      </Button>
+
+                    </TooltipTrigger>
+                    <TooltipContent>Go to</TooltipContent>
+                  </Tooltip>
                 </div>
               </CardContent>
               <div className="px-6 py-2 text-gray-500 text-right bg-gray-50 text-xs border-t border-gray-200 font-medium">

@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { EyeIcon, Pencil, Trash2, GripVertical } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TaskProps {
   task: any;
@@ -38,51 +39,82 @@ const Task: React.FC<TaskProps> = ({ task, onView, onEdit, onDelete }) => {
 
         <div className="flex justify-between items-center mb-4">
           <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="bg-gray-200 hover:bg-gray-300 w-6 h-6 transition-colors p-0"
-              onPointerDown={e => e.stopPropagation()}
-              onClick={onView}
-            >
-              <EyeIcon className="w-3 h-3 text-gray-600" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="bg-gray-200 hover:bg-gray-300 w-6 h-6 transition-colors p-0"
-              onPointerDown={e => e.stopPropagation()}
-              onClick={onEdit}
-            >
-              <Pencil className="w-3 h-3 text-gray-600" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="bg-gray-200 hover:bg-gray-300 w-6 h-6 transition-colors p-0"
-              onPointerDown={e => e.stopPropagation()}
-              onClick={onDelete}
-            >
-              <Trash2 className="w-3 h-3 text-gray-600" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="bg-gray-200 hover:bg-gray-300 w-6 h-6 transition-colors p-0"
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={onView}
+                >
+                  <EyeIcon className="w-3 h-3 text-gray-600" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent >View</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="bg-gray-200 hover:bg-gray-300 w-6 h-6 transition-colors p-0"
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={onEdit}
+                >
+                  <Pencil className="w-3 h-3 text-gray-600" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent >Edit</TooltipContent>
+
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="bg-gray-200 hover:bg-gray-300 w-6 h-6 transition-colors p-0"
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={onDelete}
+                >
+                  <Trash2 className="w-3 h-3 text-gray-600" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent >Delete</TooltipContent>
+
+            </Tooltip>
           </div>
 
           <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="bg-gray-200 hover:bg-gray-300 w-6 h-6 transition-colors p-0"
-            >
-              <GripVertical className="w-3 h-3 text-gray-600" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="bg-gray-200 hover:bg-gray-300 w-6 h-6 transition-colors cursor-grab active:cursor-grabbing p-0"
-              {...listeners}
-            >
-              <GripVertical className="w-3 h-3 text-gray-600" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="bg-gray-200 hover:bg-gray-300 w-6 h-6 transition-colors p-0"
+                >
+                  <GripVertical className="w-3 h-3 text-gray-600" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent >Move</TooltipContent>
+
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="bg-gray-200 hover:bg-gray-300 w-6 h-6 transition-colors cursor-grab active:cursor-grabbing p-0"
+                  {...listeners}
+                >
+                  <GripVertical className="w-3 h-3 text-gray-600" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent >Drag</TooltipContent>
+
+            </Tooltip>
           </div>
         </div>
 
