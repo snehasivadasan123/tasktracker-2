@@ -6,7 +6,7 @@ import { Iworkspace } from "@/types"
 import WorkspaceDialog from '@/components/WorkspaceDialog'
 import axios from 'axios'
 import { PageContainer } from '@/components/PageContainer'
-
+import api from '@/utils/api'
 interface WorkspaceDialogData {
   title: string;
 }
@@ -24,21 +24,35 @@ const page = () => {
   const [workspaces, setWorkspaces] = React.useState<Iworkspace[]>([]);
   const [workspaceToEdit, setWorkspaceToEdit] = useState<Iworkspace | null>(null)
   const [loading, setLoading] = useState(true)
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  // const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      const { data } = await api.get("/workspaces")
+      setWorkspaces(data)
+    } catch (error) {
+      console.error("Failed to fetch workspaces", error);
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
+    // const fetchData = async () => {
+    //   try {
+    //     setLoading(true);
 
-        const { data } = await axios.get(`${API_URL}/workspaces`)
-        setWorkspaces(data)
-      } catch (error) {
-        console.error("Failed to fetch workspaces", error);
-      } finally {
-        setLoading(false)
-      }
-    }
+    //     const { data } = await axios.get(`${API_URL}/workspaces`)
+    //     setWorkspaces(data)
+    //   } catch (error) {
+    //     console.error("Failed to fetch workspaces", error);
+    //   } finally {
+    //     setLoading(false)
+    //   }
+    // }
     fetchData();
   }, [])
 
@@ -51,7 +65,7 @@ const page = () => {
   }
   const handleDeleteWorkspace = async ({ id }: DeleteWorkspaceParams) => {
     try {
-      await axios.delete(`${API_URL}/workspaces/${id}`);
+      await api.delete(`/workspaces/${id}`);
       setWorkspaces((prev) => prev.filter(ws => ws.id !== id));
     } catch (error) {
       console.error("Error deleting workspace:", error);
@@ -63,10 +77,10 @@ const page = () => {
 
     try {
       const [workspacesRes, columnsRes, tasksRes, attachmentsRes] = await Promise.all([
-        axios.get(`${API_URL}/workspaces?id=${id}`),
-        axios.get(`${API_URL}/columns?workspaces_id=${id}`),
-        axios.get(`${API_URL}/tasks?workspaces_id=${id}`),
-        axios.get(`${API_URL}/attachments?workspaces_id=${id}`),
+        api.get(`/workspaces?id=${id}`),
+        api.get(`/columns?workspaces_id=${id}`),
+        api.get(`/tasks?workspaces_id=${id}`),
+        api.get(`/attachments?workspaces_id=${id}`),
       ]);
 
       const filteredData = {
@@ -86,8 +100,8 @@ const page = () => {
       link.download = `${workspace.title.replace(/\s+/g, "_")}.json`;
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
     } catch (error) {
       console.error("Failed to fetch data for download", error);
     }
@@ -127,8 +141,8 @@ const page = () => {
               };
 
               try {
-                const { data: saved } = await axios.put(
-                  `${API_URL}/workspaces/${workspaceToEdit.id}`,
+                const { data: saved } = await api.put(
+                  `/workspaces/${workspaceToEdit.id}`,
                   updatedWorkspace
                 );
 
@@ -152,8 +166,8 @@ const page = () => {
               };
 
               try {
-                const { data: savedWorkspace } = await axios.post(
-                  `${API_URL}/workspaces`,
+                const { data: savedWorkspace } = await api.post(
+                  "/workspaces",
                   newWorkspace
                 );
                 setWorkspaces((prev) => [...prev, savedWorkspace]);
